@@ -1,1 +1,1 @@
-# LLM-Powered_Summer_Home_Recommender
+# LLM-Powered Summer Home Recommender
