@@ -1,0 +1,8 @@
+# Core Python packages
+# Add any specific packages your project uses here
+# For now, this is a basic Python project with no external dependencies
+
+# If you add any external packages later, add them here like:
+# requests==2.31.0
+# pandas==2.0.3
+# numpy==1.24.3
