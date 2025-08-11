@@ -135,7 +135,7 @@ class Property:
         self.price_per_night = price_per_night
         self.features = features
         self.tags = tags
-    def pp(self):
+    def property_pp(self):
         print(f"""
         Property ID: {self.property_id} 
         Property Location: {self.location}
@@ -164,7 +164,7 @@ class User:
     def matches(self, property_obj):
         return property_obj.price_per_night <= self.budget
 
-    def pp(self):
+    def user_pp(self):
         print(f"""
         User ID: {self.user_id}
         User Name: {self.name}
@@ -197,7 +197,7 @@ for users in users_list:
     users_obj_list.append(User(users.get('user_id'),users.get('name'),users.get('group_size'),users.get('preferred_environment'),users.get('budget'),))
 
 for user in users_obj_list:
-    user.pp()
+    user.user_pp()
 
 for listing in property_obj_list:
-    listing.pp()
+    listing.property_pp()
