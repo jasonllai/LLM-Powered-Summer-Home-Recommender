@@ -135,7 +135,7 @@ class Property:
         self.price_per_night = price_per_night
         self.features = features
         self.tags = tags
-    def property_pp(self):
+    def property_display(self):
         print(f"""
         Property ID: {self.property_id} 
         Property Location: {self.location}
@@ -154,50 +154,158 @@ for listings in property_listings:
 
 
 class User:
-    def __init__(self,user_id, name, group_size, preferred_environment, budget):
+    def __init__(self,user_id, name, group_size, preferred_environment, budget_range, travel_dates):
         self.user_id = user_id
         self.name = name
         self.group_size = group_size
         self.preferred_environment = preferred_environment
-        self.budget = budget
+        self.budget_range = budget_range
+        self.travel_dates = travel_dates
     
+    def to_dict(self):
+        return {
+            "user_id": self.user_id,
+            "name": self.name,
+            "group_size": self.group_size,
+            "preferred_environment": self.preferred_environment,
+            "budget_range": self.budget_range,
+            "travel_dates": self.travel_dates
+        }
+    
+    @classmethod
+    def from_dict(cls, d): # Use value in d (which is a dictionary) to create an instance
+        return cls(
+            user_id=d["user_id"],
+            name=d["name"],
+            group_size=d["group_size"],
+            preferred_environment=d["preferred_environment"],
+            budget_range=d["budget_range"],
+            travel_dates=d["travel_dates"]
+        )
+
     def matches(self, property_obj):
         return property_obj.price_per_night <= self.budget
 
-    def user_pp(self):
+    def user_display_profile(self):
         print(f"""
         User ID: {self.user_id}
         User Name: {self.name}
         Group Size: {self.group_size}
         Preferred Environment: {self.preferred_environment}
-        Budget: {self.budget}""")
+        Budget: {self.budget_range}
+        Travel Dates: {self.travel_dates}""")
+
+
+import datetime
+
+def validate_date(date_str): #Validate if a string is in YYYY-MM-DD format
+    try:
+        datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+def create_user_profile(self):
+    print("\n=== CREATE NEW PROFILE ===")
+    user_id = len(users_obj_list) + 1
+    
+    while True:
+        name = input("Full Name: ").strip()
+        if name: break
+        print("Name cannot be empty")
+    
+    while True:
+        try:
+            group_size = int(input("Group Size: "))
+            if group_size > 0: break
+            print("Must be positive number")
+        except ValueError:
+            print("Please enter a number")
+    while True:
+        try:
+            min_budget = int(input("Minimum Budget ($): "))
+            max_budget = int(input("Maximum Budget ($): "))
+            if 0 < min_budget <= max_budget: break
+            print("Invalid budget range")
+        except ValueError:
+            print("Please enter numbers only")
+    
+    env_options = ["beach", "mountains", "city", "countryside", "desert"]
+    print("Environment options:", ", ".join(env_options))
+    while True:
+            preferred_environment = input("Preferred Environment: ").lower().strip()
+            if preferred_environment in env_options: break
+            print(f"Must be one of: {', '.join(env_options)}")
+    
+    while True:
+            try:
+                min_budget = int(input("Minimum Budget ($): "))
+                max_budget = int(input("Maximum Budget ($): "))
+                if 0 < min_budget <= max_budget: break
+                print("Invalid budget range")
+            except ValueError:
+                print("Please enter numbers only")
+    
+    travel_dates = []
+    print("\nEnter Travel Dates (YYYY-MM-DD format)")
+    while True:
+        date = input("Add date: ").strip()
+        if not date: 
+            break
+        if validate_date(date):
+            travel_dates.append(date)
+        else:
+            print("Invalid format. Use YYYY-MM-DD")
+    
+    new_user = User(user_id, name, group_size, preferred_environment, 
+                   (min_budget, max_budget), travel_dates)
+    users_obj_list.append(new_user)
+    print(f"\nProfile created successfully! User ID: {user_id}")
+    return new_user
+
+def view_user_profile(user_id):
+    for user in users_obj_list:
+        if user.user_id == user_id:
+            user.display_profile()
+            return user
+    print(f"No user found with ID {user_id}")
+    return None
+
+def delete_profile(user_id):
+    global users_obj_list
+    for i, user in enumerate(users_obj_list):
+        if user.user_id == user_id:
+            users_obj_list.pop(i)
+            print(f"Deleted user ID {user_id}")
+            return
+    print(f"No user found with ID {user_id}")
 
 
 users_list = [
-    {"user_id": 1, "name": "Alice", "group_size": 2, "preferred_environment": "beach", "budget": 150},
-    {"user_id": 2, "name": "Bob", "group_size": 4, "preferred_environment": "mountains", "budget": 200},
-    {"user_id": 3, "name": "Charlie", "group_size": 1, "preferred_environment": "city", "budget": 120},
-    {"user_id": 4, "name": "Diana", "group_size": 3, "preferred_environment": "countryside", "budget": 180},
-    {"user_id": 5, "name": "Ethan", "group_size": 5, "preferred_environment": "beach", "budget": 250},
-    {"user_id": 6, "name": "Fiona", "group_size": 2, "preferred_environment": "desert", "budget": 140},
-    {"user_id": 7, "name": "George", "group_size": 6, "preferred_environment": "mountains", "budget": 300},
-    {"user_id": 8, "name": "Hannah", "group_size": 3, "preferred_environment": "city", "budget": 170},
-    {"user_id": 9, "name": "Isaac", "group_size": 4, "preferred_environment": "countryside", "budget": 210},
-    {"user_id": 10, "name": "Julia", "group_size": 2, "preferred_environment": "beach", "budget": 160},
-    {"user_id": 11, "name": "Kevin", "group_size": 1, "preferred_environment": "desert", "budget": 110},
-    {"user_id": 12, "name": "Laura", "group_size": 5, "preferred_environment": "mountains", "budget": 260},
-    {"user_id": 13, "name": "Michael", "group_size": 3, "preferred_environment": "city", "budget": 190},
-    {"user_id": 14, "name": "Nina", "group_size": 4, "preferred_environment": "countryside", "budget": 220},
-    {"user_id": 15, "name": "Oscar", "group_size": 2, "preferred_environment": "beach", "budget": 130}
+    {"user_id": 1, "name": "Alice", "group_size": 2, "preferred_environment": "beach", "budget_range": [100,200], 'travel_dates': ['2025-08-15', '2025-08-20']},
+    {"user_id": 2, "name": "Bob", "group_size": 4, "preferred_environment": "mountains", "budget_range": [200,350], 'travel_dates': ['2025-10-15', '2025-11-02']},
+    {"user_id": 3, "name": "Charlie", "group_size": 1, "preferred_environment": "city", "budget_range": [80, 150], 'travel_dates': ['2026-01-01', '2026-02-01']},
+    {"user_id": 4, "name": "Diana", "group_size": 3, "preferred_environment": "countryside", "budget_range": [300,500], 'travel_dates': ['2025-12-05', '2025-12-12']},
+    {"user_id": 5, "name": "Ethan", "group_size": 5, "preferred_environment": "beach", "budget_range": [250,400], 'travel_dates': ['2025-12-25', '2026-01-20']},
+    {"user_id": 6, "name": "Fiona", "group_size": 2, "preferred_environment": "desert", "budget_range": [140,250], 'travel_dates': ['2025-09-20', '2025-09-25']},
+    {"user_id": 7, "name": "George", "group_size": 6, "preferred_environment": "mountains", "budget_range": [300,500], 'travel_dates': ['2025-09-23', '2025-09-26']},
+    {"user_id": 8, "name": "Hannah", "group_size": 3, "preferred_environment": "city", "budget_range": [170,300], 'travel_dates': ['2026-03-19', '2025-03-22']},
+    {"user_id": 9, "name": "Isaac", "group_size": 4, "preferred_environment": "countryside", "budget_range": [210,350], 'travel_dates': ['2026-04-26', '2026-05-01']},
+    {"user_id": 10, "name": "Julia", "group_size": 2, "preferred_environment": "beach", "budget_range": [160,280], 'travel_dates': ['2025-11-25', '2025-11-27']},
+    {"user_id": 11, "name": "Kevin", "group_size": 1, "preferred_environment": "desert", "budget_range": [110,200], 'travel_dates': ['2025-09-05', '2025-09-07']},
+    {"user_id": 12, "name": "Laura", "group_size": 5, "preferred_environment": "mountains", "budget_range": [260,450], 'travel_dates': ['2025-11-21', '2025-11-30']},
+    {"user_id": 13, "name": "Michael", "group_size": 3, "preferred_environment": "city", "budget_range": [190,320], 'travel_dates': ['2025-12-06', '2025-12-16']},
+    {"user_id": 14, "name": "Nina", "group_size": 4, "preferred_environment": "countryside", "budget_range": [220,380], 'travel_dates': ['2026-03-15', '2026-03-17']},
+    {"user_id": 15, "name": "Oscar", "group_size": 2, "preferred_environment": "beach", "budget_range": [130,230], 'travel_dates': ['2026-01-15', '2026-01-20']}
 
 ]
 
 users_obj_list = []  
 for users in users_list:
-    users_obj_list.append(User(users.get('user_id'),users.get('name'),users.get('group_size'),users.get('preferred_environment'),users.get('budget'),))
+    users_obj_list.append(User(users.get('user_id'),users.get('name'),users.get('group_size'),users.get('preferred_environment'),users.get('budget_range'),users.get('travel_dates')))
 
 for user in users_obj_list:
-    user.user_pp()
+    user.user_display_profile()
 
 for listing in property_obj_list:
-    listing.property_pp()
+    listing.property_display()
