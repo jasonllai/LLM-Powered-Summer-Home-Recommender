@@ -205,7 +205,7 @@ def validate_date(date_str): #Validate if a string is in YYYY-MM-DD format
     except ValueError:
         return False
 
-def create_user_profile(self):
+def create_user_profile():
     print("\n=== CREATE NEW PROFILE ===")
     user_id = len(users_obj_list) + 1
     
@@ -309,3 +309,5 @@ for user in users_obj_list:
 
 for listing in property_obj_list:
     listing.property_display()
+
+create_user_profile()
