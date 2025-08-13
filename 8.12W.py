@@ -216,43 +216,24 @@ for listings in property_listings:
 
 
 users_list = [
-    {"user_id": 1, "name": "Alice", "group_size": 2, "preferred_environment": "beach", "budget_range": [100,200], 'travel_dates': ['2025-08-15', '2025-08-20']}, #travel dates I mean from 2025-08-15 to 2025-08-20
-    {"user_id": 2, "name": "Bob", "group_size": 4, "preferred_environment": "mountains", "budget_range": [200,350], 'travel_dates': ['2025-10-15', '2025-11-02']},
-    {"user_id": 3, "name": "Charlie", "group_size": 1, "preferred_environment": "city", "budget_range": [80, 150], 'travel_dates': ['2026-01-01', '2026-02-01']},
-    {"user_id": 4, "name": "Diana", "group_size": 3, "preferred_environment": "countryside", "budget_range": [300,500], 'travel_dates': ['2025-12-05', '2025-12-12']},
-    {"user_id": 5, "name": "Ethan", "group_size": 5, "preferred_environment": "beach", "budget_range": [250,400], 'travel_dates': ['2025-12-25', '2026-01-20']},
-    {"user_id": 6, "name": "Fiona", "group_size": 2, "preferred_environment": "desert", "budget_range": [140,250], 'travel_dates': ['2025-09-20', '2025-09-25']},
-    {"user_id": 7, "name": "George", "group_size": 6, "preferred_environment": "mountains", "budget_range": [300,500], 'travel_dates': ['2025-09-23', '2025-09-26']},
-    {"user_id": 8, "name": "Hannah", "group_size": 3, "preferred_environment": "city", "budget_range": [170,300], 'travel_dates': ['2026-03-19', '2025-03-22']},
-    {"user_id": 9, "name": "Isaac", "group_size": 4, "preferred_environment": "countryside", "budget_range": [210,350], 'travel_dates': ['2026-04-26', '2026-05-01']},
-    {"user_id": 10, "name": "Julia", "group_size": 2, "preferred_environment": "beach", "budget_range": [160,280], 'travel_dates': ['2025-11-25', '2025-11-27']},
-    {"user_id": 11, "name": "Kevin", "group_size": 1, "preferred_environment": "desert", "budget_range": [110,200], 'travel_dates': ['2025-09-05', '2025-09-07']},
-    {"user_id": 12, "name": "Laura", "group_size": 5, "preferred_environment": "mountains", "budget_range": [260,450], 'travel_dates': ['2025-11-21', '2025-11-30']},
-    {"user_id": 13, "name": "Michael", "group_size": 3, "preferred_environment": "city", "budget_range": [190,320], 'travel_dates': ['2025-12-06', '2025-12-16']},
-    {"user_id": 14, "name": "Nina", "group_size": 4, "preferred_environment": "countryside", "budget_range": [220,380], 'travel_dates': ['2026-03-15', '2026-03-17']},
-    {"user_id": 15, "name": "Oscar", "group_size": 2, "preferred_environment": "beach", "budget_range": [130,230], 'travel_dates': ['2026-01-15', '2026-01-20']}
+    {"user_id": 1, "name": "Alice", "passward": '123456', 'booking_history': [{"property_id": 1, "start_date": "2025-08-15", "end_date": "2025-08-20"}]},
+    {"user_id": 2, "name": "Bob",}
 
 ]
 
 class User:
-    def __init__(self,user_id, name, group_size, preferred_features, preferred_tags, budget_range, travel_dates):
+    def __init__(self,user_id, name, password, booking_history)):
         self.user_id = user_id
         self.name = name
-        self.group_size = group_size
-        self.preferred_features = preferred_features
-        self.preferred_tags = preferred_tags
-        self.budget_range = budget_range
-        self.travel_dates = travel_dates
+        self.password = password
+        self.booking_history = booking_history
     
     def to_dict(self):
         return {
             "user_id": self.user_id,
             "name": self.name,
-            "group_size": self.group_size,
-            "preferred_features": self.preferred_features,
-            "preferred_tags": self.preferred_tags,
-            "budget_range": self.budget_range,
-            "travel_dates": self.travel_dates
+            "password": self.password,
+            "booking_history": self.booking_history
         }
     
     @classmethod
@@ -260,11 +241,8 @@ class User:
         return cls(
             user_id=d["user_id"],
             name=d["name"],
-            group_size=d["group_size"],
-            preferred_features=d["preferred_features"],
-            preferred_tags=d["preferred_tags"],
-            budget_range=d["budget_range"],
-            travel_dates=d["travel_dates"]
+            password=d["password"],
+            booking_history=d["booking_history"]
         )
 
 
@@ -272,11 +250,8 @@ class User:
         print(f"""
         User ID: {self.user_id}
         User Name: {self.name}
-        Group Size: {self.group_size}
-        Preferred Features: {self.preferred_features}
-        Preferred Tags: {self.preferred_tags}
-        Budget: {self.budget_range}
-        Travel Dates: {self.travel_dates}""")
+        Password: {self.password}
+        Booking History: {self.booking_history}""")
 
 
 import datetime
