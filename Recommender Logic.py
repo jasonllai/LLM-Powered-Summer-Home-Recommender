@@ -1,21 +1,186 @@
-'''import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'test'))
+from datetime import datetime, timedelta, date
 
-from Testing import users_obj_list, property_obj_list
-'''
+class ListingRecommender():
+    def __init__(self, listing_lst):
+        self.listing_lst = listing_lst
+        self.calculated_scores = {}
+        for listing in listing_lst:
+            self.calculated_scores[listing.property_id] = 0
 
-from datetime import datetime, timedelta
+        self.selected_group_size = 0
+        self.selected_minimum_budget = 0
+        self.selected_maximum_budget = 0
+        self.selected_tag = ""
+        self.selected_start_date = ""
+        self.selected_end_date = ""
+
+        self.budget_score = 0
+        self.tag_score = 0
+        self.group_size_score = 0
+        self.date_score = 0
+    def reset_all(self):
+        for listing in self.listing_lst:
+            self.calculated_scores[listing.property_id] = 0 
+
+        self.selected_group_size = 0
+        self.selected_minimum_budget = 0
+        self.selected_maximum_budget = 0
+        self.selected_tag = ""
+        self.selected_start_date = ""
+        self.selected_end_date = ""
+
+    def reset_selection(self):
+        self.selected_group_size = 0
+        self.selected_minimum_budget = 0
+        self.selected_maximum_budget = 0
+        self.selected_tag = ""
+        self.selected_start_date = ""
+        self.selected_end_date = ""
+    
+    def reset_scores(self):
+        for listing in self.listing_lst:
+            self.calculated_scores[listing.property_id] = 0 
+
+    def prompt_tag(self):
+        while True:
+            self.selected_tag = input("What are you searching for: ").strip().lower()
+            if not self.selected_tag:
+                if not self.selected_tag or len(self.selected_tag) == 0:
+                    print("Please enter at least one tag.")
+                    continue
+                else:
+                    #TODO Check if the entered tag is in the available tags.
+                    #If the tag is valid then break, if its not a valid tag continue
+                    break
+
+    def prompt_group_size(self):
+        while True:
+            try:
+                self.selected_group_size = int(input("Group Size: "))
+                if self.selected_group_size > 0: break
+                print("Must be positive number")
+            except ValueError:
+                print("Please enter a whole number")
+    
+    def prompt_budget(self):
+        while True:
+            try:
+                self.selected_minimum_budget = float(input("Minimum Budget ($) - whole number only: "))
+                if self.selected_minimum_budget != int(self.selected_minimum_budget):
+                    print("Please enter a whole number (no decimals)")
+                    continue
+                self.selected_minimum_budget = int(self.selected_minimum_budget)
+                if self.selected_minimum_budget <= 0:
+                    print("Minimum budget must be positive")
+                    continue
+                break
+            except ValueError:
+                print("Please enter a whole number")
+    
+        while True:
+            try:
+                self.selected_maximum_budget = float(input("Maximum Budget ($) - whole number only: "))
+                if self.selected_maximum_budget != int(self.selected_maximum_budget):
+                    print("Please enter a whole number (no decimals)")
+                    continue
+                self.selected_maximum_budget = int(self.selected_maximum_budget)
+                if self.selected_maximum_budget <= 0:
+                    print("Maximum budget must be positive")
+                    continue
+                if self.selected_maximum_budget < self.selected_minimum_budget:
+                    print("Maximum budget must be greater than or equal to minimum budget")
+                    continue
+                break
+            except ValueError:
+                print("Please enter a whole number")
+
+    def prompt_dates(self):
+        print("Enter Start Date of Travel (YYYY-MM-DD format): ")
+    
+        while True:
+            self.selected_start_date = input("Start date: ").strip()
+            if not self.selected_start_date:
+                print("Start date is required")
+                continue
+            if self.validate_date(self.selected_start_date):
+                break
+            else:
+                print("Invalid format. Use YYYY-MM-DD")
+        
+        while True:
+            self.selected_end_date = input("End date (YYYY-MM-DD format): ").strip()
+            if not self.selected_end_date:
+                print("End date is required")
+                continue
+            if self.validate_date(self.selected_end_date):
+                if datetime.strptime(self.selected_end_date, '%Y-%m-%d') <= datetime.strptime(self.selected_start_date, '%Y-%m-%d'):
+                    print("End date must be after start date")
+                    continue
+                break
+            else:
+                print("Invalid format. Use YYYY-MM-DD")
+
+    def calculate_tag_score(self):
+        raise NotImplementedError
+
+    def calculate_budget_score(self):
+        price_score = 0 
+        for listing in self.listing_lst:
+            if listing.price_per_night in range(self.selected_minimum_budget, self.selected_maximum_budget):
+                price_score = 3 # if the property price per night is within the user's budget return the highest score which is 3
+            elif listing.price_per_night < self.selected_minimum_budget:
+                price_difference = 1 - ((self.selected_minimum_budget - listing.price_per_night) / self.selected_minimum_budget )
+                price_score = max(0, round(price_difference * 3, 2))
+            else: # if the property price per night is higher than the user's budget
+                price_difference = 1 - ((listing.price_per_night - self.selected_maximum_budget) / self.selected_maximum_budget)
+                price_score = max(0, round(price_difference * 3, 2))
+            
+            print(f"Property {listing.property_id} ({listing.location}) prop price: {listing.price_per_night} budget {self.selected_maximum_budget} . Price Score: {round(price_score, 2)}")
+            self.calculated_scores[listing.property_id] = self.calculated_scores[listing.property_id] + price_score
+
+    def calculate_date_score(self):
+        date_score = 0
+        overlap_days_total = 0
+        days_of_stay = (self.selected_end_date - self.selected_start_date).days
+        
+
+    def calculate_group_size_score(self):
+        group_size_score = 0
+        for listing in self.listing_lst:
+            if self.selected_group_size == listing.guest_capacity:
+                group_size_score = 3
+            elif self.selected_group_size > listing.guest_capacity:
+                group_size_score = 0
+            else:
+                group_size_score = round(3 - ((3 / listing.guest_capacity) * (listing.guest_capacity - self.selected_group_size)), 2)
+            print(f"Property {listing.property_id} ({listing.location}) prop capacity: {listing.guest_capacity} your group size {self.selected_group_size} score: {group_size_score}")
+            self.calculated_scores[listing.property_id] = self.calculated_scores[listing.property_id] + group_size_score
+
+        
+
+    #HELPER METHODS
+    def validate_date(self, date_str):
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+
+
+
 listing_1 = {
     
         "property_id": 1,
         "location": "Blue Mountain, Ontario",
         "type": "cabin",
-        "price_per_night": 140,
+        "price_per_night": 230,
         "features": ["mountain view", "fireplace", "ski-in/ski-out", "wifi"],
         "tags": ["mountains", "remote", "adventure"],
         "guest_capacity": 4,
-        'unavailable_dates': ['2025-08-15', '2025-08-20', '2025-10-21', '2025-10-22', '2025-10-23']
+        'unavailable_dates': [
+            (date(2025, 8, 15), date(2025, 8, 20)), 
+            (date(2025, 10 ,21), date(2025, 10, 23))
+            ]
 
 
     }
@@ -24,12 +189,17 @@ listing_1 = {
 listing_2 = {
     "property_id": 2,
     "location": "103 Ocean Street West",
-    "type" : "Apartment",
+    "type": "Apartment",
     "price_per_night": 65,
-    "features" : ["furnished", "on the beach", "open concept"],
-    "tags" : ["cozy", "seaside"],
+    "features": ["furnished", "on the beach", "open concept"],
+    "tags": ["cozy", "seaside"],
     'guest_capacity': 2,
-    'unavailable_dates': ['2025-08-09', '2025-08-14', '2025-09-20', '2025-10-01']
+    'unavailable_dates': [
+        (date(2025, 8, 9), date(2025, 8, 9)),
+        (date(2025, 8, 14), date(2025, 8, 14)),
+        (date(2025, 9, 20), date(2025, 9, 20)),
+        (date(2025, 10, 1), date(2025, 10, 1))
+    ]
 }
 
 listing_3 = {
@@ -40,7 +210,12 @@ listing_3 = {
     "features": ["wine country view", "garden", "wifi", "bike rentals"],
     "tags": ["romantic", "wine", "culture"],
     'guest_capacity': 2,
-    'unavailable_dates': ['2025-09-30', '2025-09-15', '2025-12-20', '2025-12-03']
+    'unavailable_dates': [
+        (date(2025, 9, 15), date(2025, 9, 15)),
+        (date(2025, 9, 30), date(2025, 9, 30)),
+        (date(2025, 12, 3), date(2025, 12, 3)),
+        (date(2025, 12, 20), date(2025, 12, 20))
+    ]
 }
 
 listing_4 = {
@@ -51,7 +226,10 @@ listing_4 = {
     "features": ["lake view", "kayak included", "fire pit", "wifi"],
     "tags": ["nature", "waterfront", "hiking"],
     'guest_capacity': 3,
-    'unavailable_dates': ['2025-10-11', '2025-10-12', '2025-10-13', '2025-12-24', '2025-12-25', '2025-12-26']
+    'unavailable_dates': [
+        (date(2025, 10, 11), date(2025, 10, 13)),
+        (date(2025, 12, 24), date(2025, 12, 26))
+    ]
 }
 
 listing_5 = {
@@ -62,89 +240,130 @@ listing_5 = {
     "features": ["central location", "gym access", "rooftop view", "wifi"],
     "tags": ["city", "nightlife", "foodie"],
     'guest_capacity': 4,
-    'unavailable_dates': ['2025-11-19', '2025-11-20', '2025-11-21', '2025-11-27', '2025-11-28']
+    'unavailable_dates': [
+        (date(2025, 11, 19), date(2025, 11, 21)),
+        (date(2025, 11, 27), date(2025, 11, 28))
+    ]
 }
-listing_6 = {
-        "property_id": 6,
-        "location": "Blue Mountain, Ontario",
-        "type": "loft",
-        "price_per_night": 660,
-        "features": ["mountain view", "balcony", "wifi", "hot tub"],
-        "tags": ["mountains", "luxury", "ski"],
-        'guest_capacity': 8,
-        'unavailable_dates': ['2025-10-05']
-    }
-listing_7 = {
-        "property_id": 7,
-        "location": "Wasaga Beach, Ontario",
-        "type": "villa",
-        "price_per_night": 200,
-        "features": ["private pool", "beachfront", "AC", "wifi"],
-        "tags": ["beach", "luxury", "family"],
-        'guest_capacity': 4,
-        'unavailable_dates': ['2025-10-17', '2025-10-18', '2025-12-19', '2025-12-20']
-    }
-listing_8 = {
-        "property_id": 8,
-        "location": "Niagara-on-the-Lake, Ontario",
-        "type": "cottage",
-        "price_per_night": 350,
-        "features": ["garden", "bike rentals", "fire pit", "wifi"],
-        "tags": ["romantic", "nature", "wine"],
-        'guest_capacity': 2,
-        'unavailable_dates': ['2025-09-12', '2025-09-13', '2026-01-01', '2026-01-02', '2026-01-26']
-    }
-listing_9 = {
-        "property_id": 9,
-        "location": "Tobermory, Ontario",
-        "type": "tiny house",
-        "price_per_night": 90,
-        "features": ["lake view", "hiking trails nearby", "BBQ", "wifi"],
-        "tags": ["budget", "nature", "waterfront"],
-        'guest_capacity': 3,
-        'unavailable_dates': ['2025-12-03', '2025-12-19', '2025-12-31', '2026-02-02']
-    }
-listing_10 = {
-        "property_id": 10,
-        "location": "Toronto, Ontario",
-        "type": "studio",
-        "price_per_night": 150,
-        "features": ["central location", "AC", "wifi", "workspace"],
-        "tags": ["city", "business", "solo travel"],
-        'guest_capacity': 2,
-        'unavailable_dates': ['2025-11-11', '2025-11-20', '2025-12-04']
 
-    }
+listing_6 = {
+    "property_id": 6,
+    "location": "Blue Mountain, Ontario",
+    "type": "loft",
+    "price_per_night": 660,
+    "features": ["mountain view", "balcony", "wifi", "hot tub"],
+    "tags": ["mountains", "luxury", "ski"],
+    'guest_capacity': 8,
+    'unavailable_dates': [
+        (date(2025, 10, 5), date(2025, 10, 5))
+    ]
+}
+
+listing_7 = {
+    "property_id": 7,
+    "location": "Wasaga Beach, Ontario",
+    "type": "villa",
+    "price_per_night": 200,
+    "features": ["private pool", "beachfront", "AC", "wifi"],
+    "tags": ["beach", "luxury", "family"],
+    'guest_capacity': 4,
+    'unavailable_dates': [
+        (date(2025, 10, 17), date(2025, 10, 18)),
+        (date(2025, 12, 19), date(2025, 12, 20))
+    ]
+}
+
+listing_8 = {
+    "property_id": 8,
+    "location": "Niagara-on-the-Lake, Ontario",
+    "type": "cottage",
+    "price_per_night": 350,
+    "features": ["garden", "bike rentals", "fire pit", "wifi"],
+    "tags": ["romantic", "nature", "wine"],
+    'guest_capacity': 2,
+    'unavailable_dates': [
+        (date(2025, 9, 12), date(2025, 9, 13)),
+        (date(2026, 1, 1), date(2026, 1, 2)),
+        (date(2026, 1, 26), date(2026, 1, 26))
+    ]
+}
+
+listing_9 = {
+    "property_id": 9,
+    "location": "Tobermory, Ontario",
+    "type": "tiny house",
+    "price_per_night": 90,
+    "features": ["lake view", "hiking trails nearby", "BBQ", "wifi"],
+    "tags": ["budget", "nature", "waterfront"],
+    'guest_capacity': 3,
+    'unavailable_dates': [
+        (date(2025, 12, 3), date(2025, 12, 3)),
+        (date(2025, 12, 19), date(2025, 12, 19)),
+        (date(2025, 12, 31), date(2025, 12, 31)),
+        (date(2026, 2, 2), date(2026, 2, 2))
+    ]
+}
+
+listing_10 = {
+    "property_id": 10,
+    "location": "Toronto, Ontario",
+    "type": "studio",
+    "price_per_night": 150,
+    "features": ["central location", "AC", "wifi", "workspace"],
+    "tags": ["city", "business", "solo travel"],
+    'guest_capacity': 2,
+    'unavailable_dates': [
+        (date(2025, 11, 11), date(2025, 11, 11)),
+        (date(2025, 11, 20), date(2025, 11, 20)),
+        (date(2025, 12, 4), date(2025, 12, 4))
+    ]
+}
+
 listing_11 = {
-        "property_id": 11,
-        "location": "Muskoka, Ontario",
-        "type": "cottage",
-        "price_per_night": 770,
-        "features": ["lakefront", "canoe included", "fire pit", "wifi"],
-        "tags": ["nature", "waterfront", "family"],
-        'guest_capacity': 10,
-        'unavailable_dates': ['2025-12-12', '2025-12-23', '2025-12-24', '2025-12-28']
-    }
+    "property_id": 11,
+    "location": "Muskoka, Ontario",
+    "type": "cottage",
+    "price_per_night": 770,
+    "features": ["lakefront", "canoe included", "fire pit", "wifi"],
+    "tags": ["nature", "waterfront", "family"],
+    'guest_capacity': 10,
+    'unavailable_dates': [
+        (date(2025, 12, 12), date(2025, 12, 12)),
+        (date(2025, 12, 23), date(2025, 12, 24)),
+        (date(2025, 12, 28), date(2025, 12, 28))
+    ]
+}
+
 listing_12 = {
-        "property_id": 12,
-        "location": "Prince Edward County, Ontario",
-        "type": "guesthouse",
-        "price_per_night": 130,
-        "features": ["wine country view", "garden", "wifi", "pet friendly"],
-        "tags": ["romantic", "wine", "pet friendly"],
-        'guest_capacity': 2,
-        'unavailable_dates': ['2026-03-01', '2026-03-10', '2025-12-11']
-    }
+    "property_id": 12,
+    "location": "Prince Edward County, Ontario",
+    "type": "guesthouse",
+    "price_per_night": 130,
+    "features": ["wine country view", "garden", "wifi", "pet friendly"],
+    "tags": ["romantic", "wine", "pet friendly"],
+    'guest_capacity': 2,
+    'unavailable_dates': [
+        (date(2025, 12, 11), date(2025, 12, 11)),
+        (date(2026, 3, 1), date(2026, 3, 1)),
+        (date(2026, 3, 10), date(2026, 3, 10))
+    ]
+}
+
 listing_13 = {
-        "property_id": 13,
-        "location": "Ottawa, Ontario",
-        "type": "apartment",
-        "price_per_night": 120,
-        "features": ["central location", "balcony", "wifi", "parking"],
-        "tags": ["city", "history", "budget"],
-        'guest_capacity': 3,
-        'unavailable_dates':['2025-10-09', '2025-10-11','2025-11-14' ]
-    }
+    "property_id": 13,
+    "location": "Ottawa, Ontario",
+    "type": "apartment",
+    "price_per_night": 120,
+    "features": ["central location", "balcony", "wifi", "parking"],
+    "tags": ["city", "history", "budget"],
+    'guest_capacity': 3,
+    'unavailable_dates': [
+        (date(2025, 10, 9), date(2025, 10, 9)),
+        (date(2025, 10, 11), date(2025, 10, 11)),
+        (date(2025, 11, 14), date(2025, 11, 14))
+    ]
+}
+
 listing_14 = {
     "property_id": 14,
     "location": "Algonquin Park, Ontario",
@@ -153,7 +372,10 @@ listing_14 = {
     "features": ["forest view", "canoe included", "fire pit", "wifi"],
     "tags": ["nature", "hiking", "remote"],
     'guest_capacity': 2,
-    'unavailable_dates': ['2025-10-18', '2025-10-19', '2025-11-29']
+    'unavailable_dates': [
+        (date(2025, 10, 18), date(2025, 10, 19)),
+        (date(2025, 11, 29), date(2025, 11, 29))
+    ]
 }
 
 listing_15 = {
@@ -164,7 +386,11 @@ listing_15 = {
     "features": ["waterfront view", "balcony", "wifi", "downtown access"],
     "tags": ["city", "romantic", "history"],
     'guest_capacity': 6,
-    'unavailable_dates': ['2025-12-03', '2025-12-04', '2025-12-05', '2025-12-08', '2025-12-09', '2025-12-31']
+    'unavailable_dates': [
+        (date(2025, 12, 3), date(2025, 12, 5)),
+        (date(2025, 12, 8), date(2025, 12, 9)),
+        (date(2025, 12, 31), date(2025, 12, 31))
+    ]
 }
 
 class Property:
@@ -220,7 +446,15 @@ property_obj_list = []
 for listings in property_listings:
     property_obj_list.append(Property(listings.get('property_id'),listings.get('location'),listings.get('type'),listings.get('price_per_night'),listings.get('features'),listings.get('tags'),listings.get('guest_capacity'),listings.get('unavailable_dates')))
 
-
+recommender = ListingRecommender(property_obj_list)
+recommender.prompt_dates()
+print('TESTING -----------', recommender.selected_start_date, recommender.selected_end_date)
+recommender.calculate_group_size_score()
+print('TESTING -----------', recommender.calculated_scores)
+recommender.reset_selection()
+print('resetted -----------', recommender.selected_group_size)
+recommender.reset_scores()
+print('resetted -----------', recommender.calculated_scores)
 class User:
     def __init__(self,user_id, name, group_size, preferred_environment, budget_range, travel_dates):
         self.user_id = user_id
@@ -287,125 +521,24 @@ import numpy as np
 
 print("-"*50)
 
-trial_user_input_tag = input('What are you searching for?')
-trial_user_input_group_size = int(input('What is your group size?'))
-# trial_user_budget_min = input('What is your minimum budget?')
-trial_user_budget_max = int(input('What is your maximum budget?'))
-trial_start_date = input('When is your check-in date?')
-trial_end_date = input('When is your check-out date?')
+# bunlar kaliyor
+# trial_user_input_tag = input('What are you searching for?')
+# trial_user_input_group_size = int(input('What is your group size?'))
+# trial_start_date = input('When is your check-in date?')
+# trial_end_date = input('When is your check-out date?')
+#ask for the flex. dates 
 
-trial_start_date = datetime.strptime(trial_start_date, "%Y-%m-%d").date()
-trial_end_date = datetime.strptime(trial_end_date, "%Y-%m-%d").date()
+# trial_start_date = datetime.strptime(trial_start_date, "%Y-%m-%d").date()
+# trial_end_date = datetime.strptime(trial_end_date, "%Y-%m-%d").date()
 
 print("-"*50)
 
 # Calculate weighted Tag Score --> for now no matches score 0 but we need to define correlations in our tags pool
-properties_matched_tags_score = 0
 
-for prop in property_obj_list:
-    if trial_user_input_tag.lower() in [tag.lower() for tag in prop.tags]:
-        properties_matched_tags_score = 10
-    else: 
-        properties_matched_tags_score = 0
-    
-    print(f"Property {prop.property_id} ({prop.location}) tag score :{properties_matched_tags_score} prop tags:{prop.tags} user tag: {trial_user_input_tag}")# Calculate weighted Tag Score TODO we need to define correlation btw tags
+# Calculate weighted Price Score --> in the range fixed score out of the range 
 
-# Calculate weighted Price Score
-price_score = 0 
-
-for prop in property_obj_list:
-    if trial_user_budget_max >= prop.price_per_night:
-        price_score = 10 - 5 * (prop.price_per_night / trial_user_budget_max)   # 10 at 0 price, 5 at budget
-    else:
-        price_score = max(0, 5 - 5 * ((prop.price_per_night - trial_user_budget_max) / trial_user_budget_max))
-    
-    print(f"Property {prop.property_id} ({prop.location}) prop price: {prop.price_per_night} budget {trial_user_budget_max} . Price Score: {round(price_score, 2)}")
 
 # Calculate weighted group size
-group_size_score = 0 
-
-for prop in property_obj_list:
-    if trial_user_input_group_size > prop.guest_capacity:
-        group_size_score = 0 
-    else:
-        extra_space = prop.guest_capacity - trial_user_input_group_size
-        group_size_score = 10 + min(extra_space, 5)
-
-    
-    print(f"Property {prop.property_id} ({prop.location}) prop capacity: {prop.guest_capacity} group size: {trial_user_input_group_size} . Capacity Score: {round(group_size_score, 2)}")
 
 
 # Calculate weighted date availability score
-availability_score = 0
-total_days = (trial_end_date - trial_start_date).days + 1
-
-for prop in property_obj_list:
-    unavailable_dates = [datetime.strptime(d, "%Y-%m-%d").date() for d in prop.unavailable_dates]
-    
-    # identify available days within the user’s date range
-    current_streak = 0
-    max_streak = 0
-    fully_available = True
-    
-    for i in range(total_days):
-        current_day = trial_start_date + timedelta(days=i)
-        if current_day not in unavailable_dates:
-            current_streak += 1
-            if current_streak > max_streak:
-                max_streak = current_streak
-        else:
-            fully_available = False
-            current_streak = 0
-    
-    
-    if fully_available:
-        availability_score = 10
-    elif max_streak >= total_days:  # not all user days are in a fully available range, but they fit within gaps
-        availability_score = 5
-    else:
-        availability_score = 0
-  
-    print(f"Property {prop.property_id} ({prop.location}) unavail dates: {prop.unavailable_dates} user dates:{trial_start_date} and {trial_end_date} avail score: {round(availability_score,2)}" )
-
-
-# Defining a function that gives scores to properties according to user information
-
-'''
-def score_property_for_user(user, prop):
-    score_for_budget = 0
-    score_for_preferred_environment = 0
-    score_for_group_size = 0
-    score_for_avail_dates = 0
-    
-    # Match preferred environment with tags
-    if trial_user_input.lower() in [tag.lower() for tag in prop.tags]:
-        score_for_preferred_environment = 3
-    
-    # Check if the property price fits user's budget range
-    if user.budget_range[0] <= prop.price_per_night <= user.budget_range[1]:
-        score_for_budget = 2
-    
-    # Check if the group size fits the property's capacity so we need to DEFINE CAPACITY IN PROPERTY CLASS
-    
-    
-    if user.group_size <= prop.capacity:
-        score_for_group_size = 2
-    
-    # Check availability based on travel dates so we need to DEFINE AVAIL DATES IN PROPERTY CLASS
-    
-    if user.travel_dates[0] <= prop.available_date
-        score_for_avail_dates = 2
-    
-    
-    return score_for_budget, score_for_preferred_environment, score_for_group_size, score_for_avail_dates
-'''
-
-# Checking if the preferred environment is in the tag list in properties
-'''
-for user in users_obj_list:
-    for prop in property_obj_list:
-        # Checking for a match between preferred_environment and the tags list
-        if user.preferred_environment.lower() in [tag.lower() for tag in prop.tags]:
-            print(f"{user.name} ({user.preferred_environment}) -> Property {prop.property_id} ({prop.location}) eşleşti")
-'''
-
