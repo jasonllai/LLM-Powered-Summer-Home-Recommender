@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import json
 import time
@@ -53,7 +54,7 @@ OUTPUT RULES
 BEGIN JSON
 """).strip())
 
-
+# - If critical info is missing (dates/season, budget, interests, pace, mobility), ask up to 3 numbered follow-up questions. Otherwise proceed and state any assumptions.
 CHAT_PROMPT = Template(dedent("""
 You are TripBuddy, a helpful travel AI.
 
@@ -66,7 +67,7 @@ STYLE
 - Safety first; avoid risky/illegal suggestions.
 
 CONTENT RULES
-- If critical info is missing (dates/season, budget, interests, pace, mobility), ask up to 3 numbered follow-up questions. Otherwise proceed and state any assumptions.
+- If info is missing (dates, budget, interests, pace, mobility), make reasonable assumptions and proceed. Do NOT ask the user to restate preferences.
 - Prioritize options that are open and feasible year-round; note seasonal caveats if relevant.
 - Give 5 activity ideas max; mix well-known highlights and 1-2 lesser-known picks.
 - For each activity include: name, 1-line why it is great, typical duration, best time of day, cost level (free/$$, $$$$, $$$$$$), whether booking is recommended, and a quick tip.
@@ -134,25 +135,66 @@ def generate_properties():
                                          feature_pool=", ".join(feature_pool),
                                          tag_pool=", ".join(tag_pool))
     response = get_response(data_prompt)
+    props = extract_json_array(response)
+    append_properties_to_file(props)
     print(f"Successfully generated {num_properties} properties!")
-    return response
 
 
 def generate_suggestions():
-    print("Hi, I'm TripBuddy, your AI travel assistant.\n")
-    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.\n")
+    print("\nHi, I'm TripBuddy, your AI travel assistant.\n")
+    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.")
     print("Example input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.\n")
     inp = input("Please enter your travel preferences: ")
     inp = str(inp)
-    print("Generating suggestions...")
+    print("Generating suggestions...\n\n")
     chat_prompt = CHAT_PROMPT.substitute(user_input=inp)
     response = get_response(chat_prompt)
     print(f"Here are some suggestions for you: \n{response}")
 
 
+def extract_json_array(text: str) -> list:
+    # strip code fences
+    s = text.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", s, flags=re.DOTALL)
+    # take the outermost JSON array
+    i, j = s.find("["), s.rfind("]")
+    if i == -1 or j == -1 or j <= i:
+        raise ValueError("No JSON array found in response.")
+    return json.loads(s[i:j+1])
 
-# print(generate_properties())
-# generate_suggestions()
+
+def load_json_array(path: str) -> list:
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except json.JSONDecodeError:
+        return []
+
+
+def append_properties_to_file(props: list, path: str = "data/Properties.json") -> int:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    existing = load_json_array(path)
+    seen = {p.get("property_id") for p in existing if isinstance(p, dict)}
+    to_add = []
+    for p in props:
+        if not isinstance(p, dict):
+            continue
+        pid = p.get("property_id")
+        if pid and pid in seen:
+            continue
+        seen.add(pid)
+        to_add.append(p)
+    merged = existing + to_add
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(merged, f, indent=2, ensure_ascii=False)
+    return len(to_add)
+
+# generate_properties()
+generate_suggestions()
 
 
 
