@@ -1,4 +1,23 @@
 from datetime import datetime, timedelta, date
+import pandas as pd
+from difflib import get_close_matches, SequenceMatcher
+# Tags correlation table
+tags_pool = ["Luxury stay", "Budget-friendly", 'Family-friendly', 'Pet-friendly', 'City center', 'Beachfront', 'Mountain view', 'Lake view', 'River view', 'Ocean view']
+
+data = {
+    "Luxury stay": [1, 0.2, 0.1, 0.1, 0.1, 0.3, 0.2, 0.2, 0.1, 0.3],
+    "Budget-friendly": [0.2, 1, 0.3, 0.2, 0.3, 0.1, 0.1, 0.1, 0.1, 0.1],
+    "Family-friendly": [0.1, 0.3, 1, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1],
+    "Pet-friendly": [0.1, 0.2, 0.5, 1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    "City center": [0.1, 0.3, 0.2, 0.1, 1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    "Beachfront": [0.3, 0.1, 0.1, 0.1, 0.1, 1, 0.2, 0.3, 0.2, 0.4],
+    "Mountain view": [0.2, 0.1, 0.1, 0.1, 0.1, 0.2, 1, 0.3, 0.3, 0.2],
+    "Lake view": [0.2, 0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 1, 0.4, 0.2],
+    "River view": [0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, 1, 0.2],
+    "Ocean view": [0.3, 0.1, 0.1, 0.1, 0.1, 0.4, 0.2, 0.2, 0.2, 1]
+}
+
+corr_df = pd.DataFrame(data, index=tags_pool)
 
 class ListingRecommender():
     def __init__(self, listing_lst):
@@ -45,13 +64,10 @@ class ListingRecommender():
         while True:
             self.selected_tag = input("What are you searching for: ").strip().lower()
             if not self.selected_tag:
-                if not self.selected_tag or len(self.selected_tag) == 0:
+                if self.selected_tag or len(self.selected_tag) == 0:
                     print("Please enter at least one tag.")
-                    continue
-                else:
-                    #TODO Check if the entered tag is in the available tags.
-                    #If the tag is valid then break, if its not a valid tag continue
-                    break
+                    # continue
+            break
 
     def prompt_group_size(self):
         while True:
@@ -121,7 +137,35 @@ class ListingRecommender():
                 print("Invalid format. Use YYYY-MM-DD")
 
     def calculate_tag_score(self):
-        raise NotImplementedError
+        tag_score = 0
+        for listing in self.listing_lst:
+        # Exact match kontrolü
+            if self.selected_tag in tags_pool:
+                tag_score = 1
+                # Diğerleri korelasyona göre 0-1 arası
+                for tag in tags_pool:
+                    if tag != self.selected_tag:
+                        tag_score = round(corr_df.loc[tag_score, tag], 2)
+            
+            # Exact match yoksa en yakın tag'ı bul
+            matches = get_close_matches(self.selected_tag, tags_pool, n=1, cutoff=0.1)
+            if matches:
+                closest_tag = matches[0]
+            else:
+                closest_tag = min(
+                    tags_pool,
+                    key=lambda x: sum(1 for a, b in zip(x.lower(), self.selected_tag.lower()) if a != b) + abs(len(x)-len(self.selected_tag))
+                )
+            
+            # Skorları hesapla: benzerlik × korelasyon
+            similarity = SequenceMatcher(None, self.selected_tag.lower(), closest_tag.lower()).ratio()
+            for tag in tags_pool:
+                corr = corr_df.loc[closest_tag, tag]
+                tag_score = round(similarity * corr, 2)
+            
+            print(f"Property {listing.property_id} ({listing.location}) prop tags: {listing.tags} your tag {self.selected_tag} score: {tag_score}")
+            self.calculated_scores[listing.property_id] = self.calculated_scores[listing.property_id] + tag_score
+
 
     def calculate_budget_score(self):
         price_score = 0 
@@ -140,9 +184,27 @@ class ListingRecommender():
 
     def calculate_date_score(self):
         date_score = 0
-        overlap_days_total = 0
-        days_of_stay = (self.selected_end_date - self.selected_start_date).days
-        
+        travel_start = datetime.strptime(self.selected_start_date, '%Y-%m-%d').date()
+        travel_end = datetime.strptime(self.selected_end_date, '%Y-%m-%d').date()
+        days_of_stay = (travel_end - travel_start).days + 1
+        total_overlap = 0
+        for listing in self.listing_lst:
+            total_overlap = 0 
+            for booking_start_date, booking_end_date in listing.unavailable_dates:
+                overlap_start = max(travel_start, booking_start_date)
+                overlap_end = min(travel_end, booking_end_date)
+                if overlap_start <= overlap_end:
+                    total_overlap = total_overlap + (overlap_end - overlap_start).days + 1
+            if total_overlap == 0:
+                date_score = 2
+            elif total_overlap >= days_of_stay:
+                date_score = 0
+            else:
+                available_days = days_of_stay - total_overlap
+                date_score = round((available_days/days_of_stay) * 2, 2)
+
+            print(f"Property {listing.property_id} ({listing.location}) Property_unavail dates: {listing.unavailable_dates} your travel dates {self.selected_start_date} {self.selected_end_date}. date Score: {date_score}")
+            self.calculated_scores[listing.property_id] = self.calculated_scores[listing.property_id] + date_score
 
     def calculate_group_size_score(self):
         group_size_score = 0
@@ -195,7 +257,7 @@ listing_2 = {
     "tags": ["cozy", "seaside"],
     'guest_capacity': 2,
     'unavailable_dates': [
-        (date(2025, 8, 9), date(2025, 8, 9)),
+        (date(2025, 8, 16), date(2025, 8, 17)),
         (date(2025, 8, 14), date(2025, 8, 14)),
         (date(2025, 9, 20), date(2025, 9, 20)),
         (date(2025, 10, 1), date(2025, 10, 1))
@@ -447,14 +509,17 @@ for listings in property_listings:
     property_obj_list.append(Property(listings.get('property_id'),listings.get('location'),listings.get('type'),listings.get('price_per_night'),listings.get('features'),listings.get('tags'),listings.get('guest_capacity'),listings.get('unavailable_dates')))
 
 recommender = ListingRecommender(property_obj_list)
-recommender.prompt_dates()
-print('TESTING -----------', recommender.selected_start_date, recommender.selected_end_date)
-recommender.calculate_group_size_score()
+recommender.prompt_tag()
+print('TESTING -----------', recommender.selected_tag)
+recommender.calculate_tag_score()
 print('TESTING -----------', recommender.calculated_scores)
 recommender.reset_selection()
 print('resetted -----------', recommender.selected_group_size)
 recommender.reset_scores()
 print('resetted -----------', recommender.calculated_scores)
+
+
+
 class User:
     def __init__(self,user_id, name, group_size, preferred_environment, budget_range, travel_dates):
         self.user_id = user_id
