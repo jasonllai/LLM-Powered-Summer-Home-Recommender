@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your profile – SummerStay</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script defer src="assets/app.js"></script>
+</head>
+<body onload="SummerStay.initProfile()">
+  <header class="header">
+    <div class="header-inner">
+      <a class="back" href="dashboard.html">← Back</a>
+      <nav class="nav"><button id="logout" class="btn outline" type="button">Log out</button></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="toast" class="notice hidden"></div>
+    <div class="card pad" style="margin-top:16px">
+      <h2>Profile</h2>
+      <div class="rowline row" style="justify-content:space-between;align-items:center">
+        <div class="view"><div class="small">User ID</div><div class="kbd" data-val="id"></div></div>
+        <div class="small">Not editable</div>
+      </div>
+      <hr/>
+      <div class="rowline">
+        <div class="view flex-between">
+          <div><div class="small">Name</div><div data-val="name"></div></div>
+          <button class="btn outline" data-edit="name">Edit</button>
+        </div>
+        <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
+          <div class="field"><label>Name</label><input></div>
+          <div class="row"><button class="btn" data-save="name">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
+        </div>
+      </div>
+      <hr/>
+      <div class="rowline">
+        <div class="view flex-between">
+          <div><div class="small">Password</div><div data-val="password"></div></div>
+          <button class="btn outline" data-edit="password">Edit</button>
+        </div>
+        <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
+          <div class="field"><label>Password</label><input type="text"></div>
+          <div class="row"><button class="btn" data-save="password">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
+        </div>
+      </div>
+      <hr/>
+      <div class="rowline">
+        <div class="view flex-between">
+          <div><div class="small">Group size</div><div data-val="groupSize"></div></div>
+          <button class="btn outline" data-edit="groupSize">Edit</button>
+        </div>
+        <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
+          <div class="field"><label>Group size</label><input type="number" min="1"></div>
+          <div class="row"><button class="btn" data-save="groupSize">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
+        </div>
+      </div>
+      <hr/>
+      <div class="rowline">
+        <div class="view flex-between">
+          <div><div class="small">Preferred environment</div><div data-val="preferredEnv"></div></div>
+          <button class="btn outline" data-edit="preferredEnv">Edit</button>
+        </div>
+        <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
+          <div class="field"><label>Preferred environment</label><input></div>
+          <div class="row"><button class="btn" data-save="preferredEnv">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
+        </div>
+      </div>
+      <hr/>
+      <div class="rowline">
+        <div class="view flex-between">
+          <div><div class="small">Budget range ($min–$max)</div><div data-val="budgetRange"></div></div>
+          <button class="btn outline" data-edit="budgetRange">Edit</button>
+        </div>
+        <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
+          <div class="row">
+            <div class="field"><label>Min</label><input type="number" name="budgetMin"></div>
+            <div class="field"><label>Max</label><input type="number" name="budgetMax"></div>
+          </div>
+          <div class="row"><button class="btn" data-save="budgetRange">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pad" style="margin-top:16px">
+      <h2>Booking history</h2>
+      <div id="bookings"></div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User dashboard – SummerStay</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script defer src="assets/app.js"></script>
+</head>
+<body onload="SummerStay.initDashboard()">
+  <header class="header">
+    <div class="header-inner">
+      <div id="hello" class="brand">Welcome</div>
+      <nav class="nav">
+        <button id="logout" class="btn outline" type="button">Log out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card pad">
+        <div class="flex-between">
+          <div>
+            <h2>View / edit profile</h2>
+            <p class="small">Update your details & preferences.</p>
+          </div>
+          <a class="btn" href="profile.html">Open</a>
+        </div>
+      </div>
+      <div class="card pad">
+        <div class="flex-between">
+          <div>
+            <h2>Search for property</h2>
+            <p class="small">Recommendations and smart filters.</p>
+          </div>
+          <a class="btn" href="search.html">Open</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in – SummerStay</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script defer src="assets/app.js"></script>
+</head>
+<body onload="SummerStay.initLogin(false)">
+  <header class="header">
+    <div class="header-inner">
+      <a class="back" href="index.html">← Back</a>
+      <nav class="nav"><a class="btn outline" href="admin-login.html">Admin login</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card pad" style="max-width:520px;margin:24px auto">
+      <h2>Sign in</h2>
+      <form id="login-form">
+        <div class="field">
+          <label>User ID</label>
+          <input name="userid" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="error hidden">User ID or password is incorrect, please try again.</div>
+        <div class="row" style="justify-content:flex-end;margin-top:6px">
+          <button class="btn" type="submit">Continue</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

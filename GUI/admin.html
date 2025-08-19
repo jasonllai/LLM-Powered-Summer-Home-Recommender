@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – SummerStay</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script defer src="assets/app.js"></script>
+</head>
+<body onload="SummerStay.initAdmin()">
+  <header class="header">
+    <div class="header-inner">
+      <a class="back" href="index.html">← Back</a>
+      <nav class="nav"><button id="logout" class="btn outline" type="button">Log out</button></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="toast" class="notice hidden"></div>
+
+    <div class="grid" style="grid-template-columns:260px 1fr;gap:16px">
+      <div class="card pad" style="height:fit-content;position:sticky;top:76px">
+        <div class="grid">
+          <button class="btn outline" data-tab="users">View all registered users</button>
+          <button class="btn outline" data-tab="props">View / edit properties</button>
+          <button class="btn outline" data-tab="add">Add a new property</button>
+          <button class="btn outline" data-tab="gen">Generate properties using LLM</button>
+        </div>
+      </div>
+
+      <div>
+        <!-- Users pane -->
+        <div data-pane="users" class="card pad hidden">
+          <h2>Registered users</h2>
+          <div class="scroll">
+            <table class="table sticky-head">
+              <thead><tr><th>User ID</th><th>Name</th><th>Bookings</th><th>Prefs</th></tr></thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Properties pane -->
+        <div data-pane="props" class="card pad hidden">
+          <h2>Properties</h2>
+          <div id="props-list" class="grid grid-2"></div>
+        </div>
+
+        <!-- Add property pane -->
+        <div data-pane="add" class="card pad hidden">
+          <h2>Add new property</h2>
+          <div class="grid grid-2" style="margin-top:8px">
+            <div class="field"><label>Location</label><input id="ap-location"></div>
+            <div class="field"><label>Type</label><input id="ap-type"></div>
+            <div class="field"><label>Price per night ($)</label><input id="ap-price" type="number"></div>
+            <div class="field"><label>Guest capacity</label><input id="ap-capacity" type="number"></div>
+            <div class="field"><label>Features (comma-separated)</label><input id="ap-features"></div>
+            <div class="field"><label>Tags (comma-separated)</label><input id="ap-tags"></div>
+          </div>
+          <div class="row" style="justify-content:flex-end;margin-top:8px"><button id="ap-create" class="btn" type="button">Create property</button></div>
+        </div>
+
+        <!-- Generate pane -->
+        <div data-pane="gen" class="card pad hidden">
+          <h2>Generate properties using LLM</h2>
+          <div class="row" style="align-items:flex-end;margin-top:8px">
+            <div class="field"><label>Number of properties</label><input id="gen-n" type="number" value="5" min="1" max="50"></div>
+            <button id="gen-btn" class="btn" type="button">Generate</button>
+          </div>
+          <p class="small" style="margin-top:6px">(Simulated generation in this demo; connect your backend LLM later.)</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

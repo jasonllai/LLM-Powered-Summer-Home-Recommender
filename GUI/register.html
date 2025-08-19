@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign up – SummerStay</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script defer src="assets/app.js"></script>
+</head>
+<body onload="SummerStay.initRegister()">
+  <header class="header">
+    <div class="header-inner">
+      <a class="back" href="index.html">← Back</a>
+      <nav class="nav"><a class="btn outline" href="login.html">Have an account? Sign in</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card pad" style="max-width:520px;margin:24px auto">
+      <h2>Create account</h2>
+      <form id="register-form">
+        <div class="field">
+          <label>User ID</label>
+          <input name="userid">
+          <div id="id-error" class="error hidden">This ID has already been used by another user.</div>
+        </div>
+        <div class="field">
+          <label>Name</label>
+          <input name="name">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password">
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:6px">
+          <button class="btn" type="submit">Sign up</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>
