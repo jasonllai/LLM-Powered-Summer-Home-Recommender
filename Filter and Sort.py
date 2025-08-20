@@ -1,6 +1,6 @@
-#import pandas as pd
 import json
 from datetime import datetime, timedelta
+from Functions import Property
 
 # function that takes in a json file of properties and filters them according to user inputted attributes and returns a subset of the original 
 # properties that meets the filtering criteria as a list of Property objects
