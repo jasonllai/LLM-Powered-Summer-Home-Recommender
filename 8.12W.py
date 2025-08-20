@@ -1,50 +1,9 @@
-# Lists for testing
-listing_1 = {
-    "property_id": 1,
-    "location": "Blue Mountain, Ontario","type": "cabin",
-    "price_per_night": 140,
-    "features": ["mountain view", "fireplace", "ski-in/ski-out", "wifi"],
-    "tags": ["mountains", "remote", "adventure"],
-    "guest_capacity": 4,
-    'unavailable_dates': ['2025-08-15', '2025-08-20', '2025-10-21', '2025-10-22', '2025-10-23']
-    }
-
-listing_2 = {
-    "property_id": 2,
-    "location": "103 Ocean Street West",
-    "type" : "Apartment",
-    "price_per_night": 65,
-    "features" : ["furnished", "on the beach", "open concept"],
-    "tags" : ["cozy", "seaside"],
-    'guest_capacity': 2,
-    'unavailable_dates': ['2025-09-01', '2025-09-02', '2025-09-20', '2025-10-01']
-}
-
-property_listings = [listing_1, listing_2]
-
-users_list = [
-    {"user_id": 1, "name": "Alice", "password": '123456', 'booking_history': [{"property_id": 1, "start_date": "2025-08-15", "end_date": "2025-08-20"}]},
-    {"user_id": 2, "name": "Bob", "password": '8765', 'booking_history':[]}
-]
-
-admin_list = [
-    {"admin_id": 1, "password": 'admin123'},
-    {"admin_id": 2, "password": 'admin456'}
-]
-
-
-# Pool of locations, features, tags, and types
-locations_pool = ["Toronto", "Montreal", "Vancouver", "Calgary", "Edmonton", "Winnipeg", "Paris", "Rome", "New York", "Los Angeles", "Chicago", "Miami", "San Francisco", "Seattle", "Boston", "Washington D.C.", "London"]   
-features_pool = ["Free wifi", "Fireplace", "Pool", "Air conditioning", 'Gym access', 'Washer/Dryer', 'Sauna', 'Private balcony', 'BBQ grill', "Kitchen with oven and dishwasher", "Hot tub"]
-tags_pool = ["Luxury stay", "Budget-friendly", 'Family-friendly', 'Pet-friendly', 'City center', 'Beachfront', 'Mountain view', 'Lake view', 'River view', 'Ocean view']
-types_pool = ["Apartment", "House", "Cabin", "Villa", "Condo", "Townhouse", "Bungalow", "Cottage", "Studio", "Loft", "Penthouse", "Chalet", "Farmhouse"]
-
 # Classes
 class Property:
     def __init__(self, property_id, location, p_type, price_per_night, features, tags, guest_capacity, unavailable_dates):
         self.property_id = property_id
         self.location = location
-        self.type = p_type
+        self.p_type = p_type
         self.price_per_night = price_per_night
         self.features = features
         self.tags = tags
@@ -65,43 +24,34 @@ class Property:
     def to_dict(self):
         return {
             "property_id": self.property_id,
-            "Property Location": self.location,
-            "Property Type": self.type,
-            "Price per Night": self.price_per_night,
-            "Features": self.features,
-            "Tags": self.tags,
-            "Guest Capacity": self.guest_capacity,
-            "Unavailable Dates": self.unavailable_dates
+            "location": self.location,
+            "type": self.p_type,
+            "price_per_night": self.price_per_night,
+            "features": self.features,
+            "tags": self.tags,
+            "guest_capacity": self.guest_capacity,
+            "unavailable_dates": self.unavailable_dates
         }
 
     @classmethod
     def from_dict(cls, d): 
         return cls(
             property_id=d["property_id"],
-            location=d["Property Location"],
-            p_type=d["Property Type"],
-            price_per_night=d["Price per Night"],
-            features=d["Features"],
-            tags=d["Tags"],
-            guest_capacity=d["Guest Capacity"],
-            unavailable_dates=d["Unavailable Dates"]    
+            location=d["location"],  
+            p_type=d["type"],        
+            price_per_night=d["price_per_night"],
+            features=d["features"],
+            tags=d["tags"],
+            guest_capacity=d["guest_capacity"],
+            unavailable_dates=d["unavailable_dates"]    
         )
-
-property_obj_list = [
-    Property(
-        l["property_id"], l["location"], l["type"], l["price_per_night"],
-        l["features"], l["tags"], l["guest_capacity"], l.get("unavailable_dates", [])
-    )
-    for l in property_listings
-]
-
 
 class User:
     def __init__(self, user_id, name, password, booking_history):
         self.user_id = user_id
         self.name = name
         self.password = password
-        self.booking_history = booking_history
+        self.booking_history = booking_history if booking_history else []
     
     def to_dict(self):
         return {
@@ -117,21 +67,36 @@ class User:
             user_id=d["user_id"],
             name=d["name"],
             password=d["password"],
-            booking_history=d["booking_history"]
+            booking_history=d.get("booking_history", [])
         )
 
     def user_display_profile(self):
-        bh = self.booking_history if self.booking_history else "No booking yet"
         print(f"""
         User ID: {self.user_id}
         Name: {self.name}
         Password: {self.password}
-        Booking History: {bh}""")
+        Booking History:""")
 
-users_obj_list = [
-    User(u["user_id"], u["name"], u["password"], u.get("booking_history", []))
-    for u in users_list
-]
+        if not self.booking_history:
+            print("    No booking yet")
+        col_widths = {
+            "index": 5,
+            "property_id": 15,
+            "start_date": 12,
+            "end_date": 12
+        }
+
+        # Calculate the starting position for booking details
+        indent = " " * 4  # Adjust this to match the indentation of the password line
+
+        # Print header with consistent indentation
+        print(f"{indent}{'Index':<{col_widths['index']}} {'Property ID':<{col_widths['property_id']}} "
+              f"{'Start Date':<{col_widths['start_date']}} {'End Date':<{col_widths['end_date']}}")
+
+        # Print each booking with consistent indentation
+        for i, booking in enumerate(self.booking_history, 1):
+            print(f"{indent}{i:<{col_widths['index']}} {booking['property_id']:<{col_widths['property_id']}} "
+                  f"{booking['start_date']:<{col_widths['start_date']}} {booking['end_date']:<{col_widths['end_date']}}")
 
 
 class Admin:
@@ -160,6 +125,17 @@ class Admin:
     
 
 # Functions
+from collections import UserString
+import json
+def load_data_from_json(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
+
+def save_data_to_json(file_path, data):
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
+
+
 import datetime
 def validate_date(date_str):
     try:
@@ -169,6 +145,8 @@ def validate_date(date_str):
         return False
 
 def view_properties(property_id):
+    property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
+
     for property in property_obj_list:
         if property.property_id == property_id:
             property.property_display()
@@ -178,6 +156,7 @@ def view_properties(property_id):
 
 
 def add_properties():
+    property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
     property_id = len(property_obj_list) + 1
 
     while True:
@@ -253,21 +232,28 @@ def add_properties():
         features, tags, guest_capacity, unavailable_dates
     )
     property_obj_list.append(new_property)
+    properties_data = [p.to_dict() for p in property_obj_list]
+    save_data_to_json("data/Properties.json", properties_data)
     print(f"Property added successfully! Property ID: {property_id}")
     return new_property
 
 
 
 def delete_properties(property_id):
+    property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
     for i, property in enumerate(property_obj_list):
         if property.property_id == property_id:
             property_obj_list.pop(i)
             print(f"Property deleted successfully! Property ID: {property_id}")
-            return
+            
+    properties_data = [p.to_dict() for p in property_obj_list]
+    save_data_to_json("data/Properties.json", properties_data)
     print(f"No property found with ID {property_id}")
+    return
 
 
 def update_property(property_id):
+    property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
     target = None
     for p in property_obj_list:
         if p.property_id == property_id:
@@ -395,28 +381,30 @@ def update_property(property_id):
 
         print("\nUpdated property:")
         target.property_display()
-
+    properties_data = [p.to_dict() for p in property_obj_list]
+    save_data_to_json("data/Properties.json", properties_data)
     return target
 
 def _find_user(user_id):
+    users_obj_list = [User.from_dict(d) for d in load_data_from_json("data/Users.json")]
     for u in users_obj_list:
         if u.user_id == user_id:
             return u
     return None
 
 def _find_property(property_id):
+    property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
     for p in property_obj_list:
         if p.property_id == property_id:
             return p
     return None
 
 
-def create_booking_history(user_id):
-    print(f"\n=== Booking FOR USER {user_id} ===")
-    user = _find_user(user_id)
+def create_booking_history(user, users_obj_list):
+    print(f"\n=== Booking FOR USER {user.user_id} ===")
     
     if not user:
-        print(f"No user found with ID {user_id}")
+        print(f"No user found with ID {user.user_id}")
         return None
 
     while True:
@@ -455,14 +443,20 @@ def create_booking_history(user_id):
         "start_date": start_date,
         "end_date": end_date
     })
+
+    for i, u in enumerate(users_obj_list):
+        if u.user_id == user.user_id:
+            users_obj_list[i] = user
+            break
+
     print("Booking created successfully!")
+    print("Current bookings:", user.booking_history)
 
 
 
-def delete_booking(user_id):
-    user = _find_user(user_id)
+def delete_booking(user, users_obj_list):
     if not user:
-        print(f"No user found with ID {user_id}")
+        print(f"No user found with ID {user.user_id}")
         return None
     if not user.booking_history:
         print("No booking to delete")
@@ -470,11 +464,11 @@ def delete_booking(user_id):
 
     print("\nYour bookings:")
     for i, b in enumerate(user.booking_history, 1):
-        print(f"{i}. Property {b['property_id']} | from {b['start_date']} to {b['end_date']}")
+        print(f"{i}. Booking {i}:  Property {b['property_id']} | from {b['start_date']} to {b['end_date']}")
 
     while True:
         try:
-            idx_f = float(input("Enter booking number to delete: ").strip())
+            idx_f = float(input("Enter booking index to delete: ").strip())
             if idx_f != int(idx_f):
                 print("Please enter a whole number")
                 continue
@@ -501,11 +495,17 @@ def delete_booking(user_id):
         print("That booking no longer exists")
         return None
 
+    for i, u in enumerate(users_obj_list):
+        if u.user_id == user.user_id:
+            users_obj_list[i] = user
+            break
+
     print(f"Booking {idx} deleted")
-    return removed
+
 
 
 def create_user_profile():
+    users_obj_list = []
     print("\n=== CREATE NEW PROFILE ===")
     user_id = len(users_obj_list) + 1
     
@@ -522,10 +522,13 @@ def create_user_profile():
     new_user = User(user_id, name, password, [])
     users_obj_list.append(new_user)
     print(f"\nProfile created successfully! User ID: {user_id}")
+    users_data = [u.to_dict() for u in users_obj_list]
+    save_data_to_json("data/Users.json", users_data)
     return new_user
 
 
 def view_user_profile(user_id):
+    users_obj_list = [User.from_dict(d) for d in load_data_from_json("data/Users.json")]
     for user in users_obj_list:
         if user.user_id == user_id:
             user.user_display_profile()
@@ -534,16 +537,20 @@ def view_user_profile(user_id):
     return None
 
 def delete_profile(user_id):
-    global users_obj_list
+    users_obj_list = [User.from_dict(d) for d in load_data_from_json("data/Users.json")]
     for i, user in enumerate(users_obj_list):
         if user.user_id == user_id:
             users_obj_list.pop(i)
             print(f"Deleted user ID {user_id}")
+            users_data = [u.to_dict() for u in users_obj_list]
+            save_data_to_json("data/Users.json", users_data)
             return
     print(f"No user found with ID {user_id}")
 
+
 def edit_user_profile(user_id):
-    user = _find_user(user_id)
+    users_obj_list = [User.from_dict(d) for d in load_data_from_json("data/Users.json")]
+    user = next((u for u in users_obj_list if u.user_id == user_id), None)
     if not user:
         print(f"No user found with ID {user_id}")
         return None
@@ -571,7 +578,7 @@ def edit_user_profile(user_id):
 
         if choice == 5:
             print("Edit session completed")
-            return user
+            break
 
         if choice == 1:
             while True:
@@ -592,117 +599,24 @@ def edit_user_profile(user_id):
                 print("Password cannot be empty")
 
         elif choice == 3:
-            create_booking_history(user.user_id)
+            create_booking_history(user, users_obj_list)
 
         elif choice == 4:
-            delete_booking(user.user_id)
+            delete_booking(user, users_obj_list)
 
+        for i, u in enumerate(users_obj_list):
+            if u.user_id == user.user_id:
+                users_obj_list[i] = user
+                break
+
+        users_data = [u.to_dict() for u in users_obj_list]
+        save_data_to_json("data/Users.json", users_data)
         print("\nUpdated profile:")
         user.user_display_profile()
 
+view_user_profile(1)
+edit_user_profile(1)
+view_user_profile(1)
 
 
 
-
-
-# Includes some validations for the things users input
-def search_properties():
-    while True:
-        try:
-            group_size = int(input("Group Size: "))
-            if group_size > 0: break
-            print("Must be positive number")
-        except ValueError:
-            print("Please enter a whole number")
-    while True:
-        try:
-            min_budget = float(input("Minimum Budget ($) - whole number only: "))
-            if min_budget != int(min_budget):
-                print("Please enter a whole number (no decimals)")
-                continue
-            min_budget = int(min_budget)
-            if min_budget <= 0:
-                print("Minimum budget must be positive")
-                continue
-            break
-        except ValueError:
-            print("Please enter a whole number")
-    
-    while True:
-        try:
-            max_budget = float(input("Maximum Budget ($) - whole number only: "))
-            if max_budget != int(max_budget):
-                print("Please enter a whole number (no decimals)")
-                continue
-            max_budget = int(max_budget)
-            if max_budget <= 0:
-                print("Maximum budget must be positive")
-                continue
-            if max_budget < min_budget:
-                print("Maximum budget must be greater than or equal to minimum budget")
-                continue
-            break
-        except ValueError:
-            print("Please enter a whole number")
-    
-    # Get preferred features
-    print("\nEnter your preferred features (at least one required):")
-    print("Examples: wifi, fireplace, pool, beachfront, mountain view, etc.")
-    print("Press Enter when you're done adding features")
-    preferred_features = []
-    while True:
-        feature = input("Add feature: ").strip().lower()
-        if not feature:
-            if not preferred_features:
-                print("Please enter at least one feature")
-                continue
-            else:
-                print(f"Features added: {preferred_features}")
-                break
-        preferred_features.append(feature)
-        print(f"Added: {feature}")
-    
-    print("\nEnter your preferred tags (at least one required):")
-    print("Examples: beach, luxury, budget, family, adventure, etc.")
-    print("Press Enter when you're done adding tags")
-    preferred_tags = []
-    while True:
-        tag = input("Add tag: ").strip().lower()
-        if not tag:
-            if not preferred_tags:
-                print("Please enter at least one tag")
-                continue
-            else:
-                print(f"Tags added: {preferred_tags}")
-                break
-        preferred_tags.append(tag)
-        print(f"Added: {tag}")
-    
-    
-    travel_dates = []
-    print("\nEnter Start Date of Travel (YYYY-MM-DD format): ")
-    
-    while True:
-        start_date = input("Start date: ").strip()
-        if not start_date:
-            print("Start date is required")
-            continue
-        if validate_date(start_date):
-            break
-        else:
-            print("Invalid format. Use YYYY-MM-DD")
-    
-    while True:
-        end_date = input("End date (YYYY-MM-DD format): ").strip()
-        if not end_date:
-            print("End date is required")
-            continue
-        if validate_date(end_date):
-            if datetime.datetime.strptime(end_date, '%Y-%m-%d') <= datetime.datetime.strptime(start_date, '%Y-%m-%d'):
-                print("End date must be after start date")
-                continue
-            break
-        else:
-            print("Invalid format. Use YYYY-MM-DD")
-    
-    travel_dates = [start_date, end_date]
