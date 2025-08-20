@@ -667,7 +667,7 @@ def create_user_profile(name, password, group_size, preferred_environment, budge
 
     print(f"Profile created successfully! User ID: {user_id}")
     return new_user
-
+    
 
 # Old version of create user profile (ask user for input version)
 # def create_user_profile(file_path="data/Users.json"):
