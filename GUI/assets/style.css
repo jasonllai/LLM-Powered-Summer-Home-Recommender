@@ -64,3 +64,65 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0}
 .hidden{display:none !important}
 .small{font-size:12px;color:var(--muted)}
 footer{padding:32px 0;color:#64748b}
+/* AI Assistant */
+.ai-fab{
+  position:fixed; bottom:24px; right:24px; width:56px; height:56px;
+  border-radius:999px; border:none; cursor:pointer; z-index:60;
+  background: linear-gradient(135deg,#4f46e5,#06b6d4); color:#fff; font-size:22px;
+  box-shadow:0 12px 24px rgba(2,8,20,.18), 0 2px 6px rgba(2,8,20,.08);
+}
+.ai-fab:active{ transform:scale(.98) }
+
+.ai-hint{
+  position:fixed; bottom:92px; right:24px; z-index:60;
+  background:#fff; color:#0f172a; border:1px solid var(--border);
+  border-radius:14px; padding:10px 12px; font-size:12px; max-width:260px;
+  box-shadow:0 12px 24px rgba(2,8,20,.10), 0 2px 6px rgba(2,8,20,.06);
+}
+.ai-hint::after{
+  content:""; position:absolute; bottom:-8px; right:18px; width:14px; height:14px;
+  background:#fff; border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+  transform:rotate(45deg);
+}
+
+.ai-overlay{
+  position:fixed; inset:0; z-index:70; background:rgba(15,23,42,.55);
+  display:grid; place-items:center;
+}
+.ai-modal{
+  width:min(720px,92vw); max-height:80vh; display:flex; flex-direction:column;
+  background:#fff; border:1px solid var(--border); border-radius:16px;
+  box-shadow:0 24px 48px rgba(2,8,20,.28), 0 8px 16px rgba(2,8,20,.12);
+}
+.ai-top{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:10px 12px; border-bottom:1px solid var(--border);
+}
+.ai-top .ai-min{ padding:6px 10px }
+.ai-chat{ flex:1; overflow:auto; padding:14px }
+.ai-msg{ display:flex; margin:8px 0 }
+.ai-msg.ai .bubble{ background:#f1f5f9; color:#0f172a }
+.ai-msg.me{ justify-content:flex-end }
+.ai-msg .bubble{
+  max-width:80%; padding:10px 12px; border-radius:14px;
+  box-shadow:0 2px 6px rgba(2,8,20,.06);
+}
+.ai-msg.me .bubble{ background:#111827; color:#fff }
+.ai-input{
+  display:flex; gap:8px; padding:10px; border-top:1px solid var(--border);
+}
+.ai-input input{ flex:1 }
+@media (max-width:600px){
+  .ai-hint{ right:16px; left:16px; max-width:none }
+  .ai-fab{ right:16px; bottom:16px }
+  .ai-modal{ width:94vw; max-height:86vh }
+}
+.ai-h{ font-weight:700; margin:8px 0 4px 0 }
+.ai-list{ margin:6px 0 8px 0; padding-left:0 }
+.ai-list li{
+  list-style:none; position:relative; margin:4px 0; padding-left:16px;
+}
+.ai-list li::before{
+  content:"–"; position:absolute; left:0; color:#334155;
+}
+.ai-msg .bubble p{ margin:4px 0 }

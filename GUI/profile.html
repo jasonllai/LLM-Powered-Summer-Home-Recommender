@@ -20,7 +20,7 @@
     <div class="card pad" style="margin-top:16px">
       <h2>Profile</h2>
       <div class="rowline row" style="justify-content:space-between;align-items:center">
-        <div class="view"><div class="small">User ID</div><div class="kbd" data-val="id"></div></div>
+        <div class="view"><div class="small">Username</div><div class="kbd" data-val="id"></div></div>
         <div class="small">Not editable</div>
       </div>
       <hr/>
@@ -63,7 +63,20 @@
           <button class="btn outline" data-edit="preferredEnv">Edit</button>
         </div>
         <div class="edit hidden row" style="justify-content:space-between;align-items:flex-end">
-          <div class="field"><label>Preferred environment</label><input></div>
+          <div class="field"><label>Preferred environment</label>
+            <select>
+              <option value="beach">Beach</option>
+              <option value="lake">Lake</option>
+              <option value="forest">Forest</option>
+              <option value="mountains">Mountains</option>
+              <option value="nightlife">Nightlife</option>
+              <option value="remote">Remote</option>
+              <option value="glamping">Glamping</option>
+              <option value="city">City</option>
+              <option value="modern">Modern</option>
+              <option value="historic">Historic</option>
+            </select>
+          </div>
           <div class="row"><button class="btn" data-save="preferredEnv">Save</button><button class="btn ghost" data-cancel>Cancel</button></div>
         </div>
       </div>

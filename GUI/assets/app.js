@@ -4,6 +4,7 @@
 */
 const USE_LOCAL = true;
 const API_BASE = ""; // e.g., "/api"
+const ASSIST_API = "http://127.0.0.1:5050";
 
 // --- Local demo DB ---
 function seedDb() {
@@ -108,7 +109,6 @@ function initProfile(){
   if(user.bookingHistory?.length){
     list.innerHTML = user.bookingHistory.map(b => `<div class="flex-between small"><span class="kbd">${b.propertyId.slice(0,8)}</span><span>${b.start} → ${b.end} · ${money(b.price)}/night</span></div>`).join("");
   } else list.innerHTML = `<div class="small">No bookings yet.</div>`;
-
   qsa("[data-edit]").forEach(btn => {
     btn.addEventListener("click", ()=>{
       const key = btn.getAttribute("data-edit");
@@ -117,14 +117,12 @@ function initProfile(){
         const [min,max] = user.budgetRange;
         row.querySelector("[name=budgetMin]").value = min;
         row.querySelector("[name=budgetMax]").value = max;
+      }else if(key==="preferredEnv"){
+        const sel = row.querySelector("select");
+        if(sel) sel.value = user.preferredEnv || "";
       }else{
         row.querySelector("input").value = user[key];
       }
-    });
-  });
-  qsa("[data-cancel]").forEach(btn => {
-    btn.addEventListener("click", ()=>{
-      const row = btn.closest(".rowline"); row.querySelector(".edit").classList.add("hidden"); row.querySelector(".view").classList.remove("hidden");
     });
   });
   qsa("[data-save]").forEach(btn => {
@@ -135,6 +133,10 @@ function initProfile(){
         const max = Number(qs("[name=budgetMax]").value);
         user.budgetRange = [min,max];
         qs("[data-val='budgetRange']").textContent = `${min}–${max}`;
+      }else if(key==="preferredEnv"){
+        const val = btn.closest(".rowline").querySelector("select").value;
+        user.preferredEnv = val;
+        qs(`[data-val='preferredEnv']`).textContent = val;
       }else{
         const val = btn.closest(".rowline").querySelector("input").value;
         user[key] = (key==="groupSize") ? Number(val) : val;
@@ -143,6 +145,11 @@ function initProfile(){
       saveDb(DB);
       const row = btn.closest(".rowline"); row.querySelector(".edit").classList.add("hidden"); row.querySelector(".view").classList.remove("hidden");
       toast("Saved", true);
+    });
+  });
+  qsa("[data-cancel]").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      const row = btn.closest(".rowline"); row.querySelector(".edit").classList.add("hidden"); row.querySelector(".view").classList.remove("hidden");
     });
   });
   qs("#logout")?.addEventListener("click", logoutAll);
@@ -254,6 +261,136 @@ function initSearch(){
       });
     });
   }
+
+  // --- AI Assistant UI ---
+  // Floating button
+  const fab = document.createElement("button");
+  fab.className = "ai-fab";
+  fab.title = "AI Assistant";
+  fab.textContent = "🤖";
+  document.body.appendChild(fab);
+
+  // Hint bubble
+  const hint = document.createElement("div");
+  hint.className = "ai-hint";
+  hint.textContent = "Ask our AI Assistant for travel blurbs & activity ideas!";
+  document.body.appendChild(hint);
+  const hideHint = ()=>{ hint.classList.add("hidden"); sessionStorage.setItem("ai-hint-shown","1"); };
+  if(sessionStorage.getItem("ai-hint-shown")==="1") hint.classList.add("hidden");
+  setTimeout(hideHint, 5000);
+  hint.addEventListener("click", hideHint);
+
+  // Modal
+  const overlay = document.createElement("div");
+  overlay.className = "ai-overlay hidden";
+  overlay.innerHTML = `
+    <div class="ai-modal">
+      <div class="ai-top">
+        <button type="button" class="btn ghost ai-min">← Minimize</button>
+        <div class="small">AI Travel Assistant</div>
+        <div></div>
+      </div>
+      <div class="ai-chat"></div>
+      <form class="ai-input">
+        <input type="text" placeholder="Tell me your trip details..." autocomplete="off" />
+        <button class="btn" type="submit">Send</button>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const chat = overlay.querySelector(".ai-chat");
+  const form = overlay.querySelector("form");
+  const input = overlay.querySelector("input");
+
+  function escapeHtml(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+  const thread = [];
+
+  function renderRich(text){
+    const lines = String(text || "").split(/\r?\n/);
+    let html = "", inList = false;
+    const flush = ()=>{ if(inList){ html += "</ul>"; inList=false; } };
+    for(const raw of lines){
+      const line = raw.trimEnd();
+      if(!line.trim()){ flush(); html += "<div style='height:6px'></div>"; continue; }
+      const h = line.match(/^\*\*(.+?)\*\*:?$/); // full-line bold as a section title
+      if(h){ flush(); html += `<div class="ai-h">${escapeHtml(h[1])}</div>`; continue; }
+      const m = line.match(/^(?:\*|-)\s+(.*)$/); // bullet lines starting with * or -
+      if(m){
+        if(!inList){ html += `<ul class="ai-list">`; inList = true; }
+        html += `<li>${escapeHtml(m[1])}</li>`;
+        continue;
+      }
+      flush();
+      html += `<p>${escapeHtml(line)}</p>`;
+    }
+    flush();
+    return html;
+  }
+  
+  function addMsg(who, text){
+    const el = document.createElement("div");
+    el.className = "ai-msg " + (who==="me" ? "me" : "ai");
+    const content = (who==="ai") ? renderRich(text) : escapeHtml(text);
+    el.innerHTML = `<div class="bubble">${content}</div>`;
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+    thread.push({ role: who==="me" ? "user" : "assistant", content: text });
+  }
+  // function addMsg(who, text){
+  //   const el = document.createElement("div");
+  //   el.className = "ai-msg " + (who==="me" ? "me" : "ai");
+  //   el.innerHTML = `<div class="bubble">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
+  //   chat.appendChild(el); chat.scrollTop = chat.scrollHeight;
+  //   thread.push({ role: who==="me" ? "user" : "assistant", content: text });
+  // }
+
+  const initialMsg = "Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.\nExample input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.";
+  let seeded = false;
+
+  function openModal(){
+    overlay.classList.remove("hidden");
+    if(!seeded){ addMsg("ai", initialMsg); seeded = true; }
+  }
+  function closeModal(){ overlay.classList.add("hidden"); }
+
+  fab.addEventListener("click", ()=>{ openModal(); hideHint(); });
+  overlay.querySelector(".ai-min").addEventListener("click", closeModal);
+
+  async function assistantReply(prompt){
+    try{
+      const r = await fetch(`${ASSIST_API}/assistant`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ user_input: prompt, messages: thread })
+      });
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      return data.text || "Sorry, I couldn't generate suggestions right now.";
+    }catch(err){
+      console.error(err);
+      return localFallbackSuggestion(prompt, user);
+    }
+  }
+
+  function localFallbackSuggestion(prompt, user){
+    const days = /\b(\d+)\s*(day|days|night|nights)\b/i.test(prompt) ? Math.max(2, Math.min(5, Number(RegExp.$1))) : 3;
+    const loc = (prompt.match(/\bin\s+([A-Za-z][A-Za-z\s,'-]+?)(?:\s+(in|on|during|for|from|by|at)\b|[.!?,;]|$)/i)?.[1] || "your destination").trim();
+    const blurb = `Here’s a mini‑itinerary for ${days} days in ${loc}. Expect a mix of highlights with room to explore.`;
+    const lines = Array.from({length:days}, (_,i)=>`Day ${i+1}: Neighborhood wander + local eats · Afternoon museum/park · Evening views.`);
+    return `${blurb}\n\n${lines.join("\n")}`;
+  }
+
+  form.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const text = input.value.trim();
+    if(!text) return;
+    addMsg("me", text);
+    input.value = "";
+    const reply = await assistantReply(text);
+    addMsg("ai", reply);
+  });
 }
 
 // --- Admin ---
