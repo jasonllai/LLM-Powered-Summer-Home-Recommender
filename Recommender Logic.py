@@ -4,9 +4,46 @@ from difflib import get_close_matches, SequenceMatcher
 import json 
 
 class ListingRecommender():
-    def __init__(self, property_lst, corr_df):
+    def __init__(self, property_lst):
+        # Tags correlation table
+        tags_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
+                    "river", "ocean", "forest", "park", "national park", "state park", 
+                    "national forest", "state forest", "modern","rustic","historic",
+                    "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
+                    "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"]
+
+        correlation_table = {
+            "beach": [0.1,0.2,0.3,1.0,0.3,0.2,0.2,0.8,0.1,0.3,0.2,0.2,0.1,0.1,0.2,0.2,0.2,0.1,0.1,0.1,0.4,0.1,0.5,0.3,0.5,0.3,0.2,0.2,0.1,0.2],
+            "lake": [0.1,0.1,0.1,0.2,0.2,1.0,0.7,0.3,0.6,0.2,0.3,0.2,0.7,0.6,0.1,0.3,0.4,0.1,0.1,0.1,0.2,0.2,0.1,0.2,0.2,0.1,0.2,0.4,0.3,0.3],
+            "forest": [0.9,0.4,0.7,0.1,0.1,0.6,0.5,0.1,1.0,0.4,0.6,0.5,0.9,0.8,0.1,0.5,0.6,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.5,0.4,0.3,0.3],
+            "mountains": [1.0,0.2,0.7,0.1,0.1,0.1,0.1,0.1,0.9,0.2,0.3,0.2,0.8,0.7,0.1,0.5,0.6,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.1,0.2,0.6,0.5,0.3,0.4],
+            "nightlife": [0.2,0.1,0.2,0.3,0.1,0.1,0.1,0.3,0.2,0.2,0.2,0.2,0.2,0.2,0.1,0.1,0.1,0.1,0.1,0.1,0.3,0.2,1.0,0.2,0.5,0.3,0.1,0.1,0.2,0.2],
+            "remote": [0.2,1.0,0.5,0.2,0.1,0.1,0.1,0.1,0.4,0.2,0.2,0.2,0.4,0.3,0.1,0.3,0.3,0.1,0.1,0.1,0.2,0.1,0.1,0.2,0.1,0.1,0.3,0.2,0.2,0.3],
+            "glamping": [0.3,0.3,0.3,0.1,0.1,0.2,0.2,0.1,0.3,0.1,0.2,0.2,0.3,0.3,0.3,0.2,0.2,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,1.0,0.2],
+            "city": [0.1,0.1,0.1,0.3,1.0,0.2,0.2,0.2,0.1,0.3,0.1,0.1,0.1,0.1,0.7,0.3,0.2,0.1,0.1,0.1,0.5,0.8,0.6,0.1,0.6,0.6,0.6,0.1,0.1,0.2],
+            "modern": [0.1,0.1,0.1,0.2,0.7,0.1,0.1,0.2,0.1,0.2,0.2,0.2,0.1,0.1,1.0,0.4,0.3,0.1,0.1,0.3,0.4,0.6,0.1,0.2,0.5,0.3,0.1,0.1,0.3,0.3],
+            "historic": [0.6,0.3,0.5,0.2,0.2,0.4,0.4,0.2,0.6,0.2,0.3,0.3,0.6,0.5,0.3,0.6,1.0,0.1,0.1,0.2,0.3,0.2,0.1,0.2,0.2,0.2,0.3,0.3,0.2,0.3],
+        }
+
+        # Creating correlation data frame with zeros
+        corr_df = pd.DataFrame(0.0, index=tags_pool, columns=tags_pool)
+
+        # Fill rows from correlation_table (pad/truncate to tags_pool length)
+
+        for tag, row in correlation_table.items():
+        # Making sure each row has the same length as our tags_pool. Our rows in correlation_table are shorter than tags_pool, so we pad them with zeros. Truncation is just a safeguard.
+        # So actually only row + [0.0] * (len(tags_pool)-len(row)) is running
+            if tag in corr_df.index:
+                r = (row + [0.0]*(len(tags_pool)-len(row)))[:len(tags_pool)]
+                corr_df.loc[tag] = r
+
+        # Set self-correlation = 1 for every tag
+        for t in tags_pool:
+            corr_df.loc[t, t] = 1.0
+
         self.property_lst = property_lst
         self.corr_df = corr_df
+
         self.calculated_scores = {}
         for listing in property_lst:
             self.calculated_scores[listing.get('property_id')] = 0
@@ -129,23 +166,23 @@ class ListingRecommender():
             return 0.0
 
         # Normalize the preferred tag (strip spaces, lowercase)
-        p = preferred_tag.strip().lower()
+        normalized_preferred = preferred_tag.strip().lower()
 
         # First checking for exact matches
         for lt in property_tags:
-            if p == lt.strip().lower():
+            if normalized_preferred == lt.strip().lower():
                 return 1.0
 
         # If no exact match found, look for correlations. Correlation matrix is asymmetric: row = preferred environment of user, column = listing tag
-        best = 0
-        for lt in property_tags:
-            lt_n = lt.strip().lower()
-            if p in self.corr_df.index and lt_n in self.corr_df.columns:
-                v = float(self.corr_df.loc[p, lt_n])
-                if v > best:
-                    best = v # Here we keep the maximum correlation score by listing
+        best_correlation = 0
+        for property_tag in property_tags:
+            normalized_property_tag = lt.strip().lower()
+            if normalized_preferred in self.corr_df.index and normalized_property_tag in self.corr_df.columns:
+                v = float(self.corr_df.loc[normalized_preferred, normalized_property_tag])
+                if v > best_correlation:
+                    best_correlation = v # Here we keep the maximum correlation score by listing
         # Returning the tag_score            
-        return round(best, 3)
+        return round(best_correlation, 3)
 
     def calculate_budget_score(self, active_user, price):
         price_score = 0
@@ -184,10 +221,6 @@ class ListingRecommender():
             price_score = self.calculate_budget_score(active_user, price)
 
             rows.append({
-                "user_id": active_user["user_id"],
-                "user_name": active_user.get("name", ""),
-                "group_size": active_user.get("group_size"),
-                "budget_range": active_user.get("budget_range", []),
                 "property_id": prop["property_id"],
                 "location": prop.get("location", ""),
                 "type": prop.get("type", ""),
@@ -196,11 +229,9 @@ class ListingRecommender():
                 "tags": ", ".join(prop.get("tags", [])),
                 "total_score": tag_score + group_size_score + price_score
         })
-
-        df = pd.DataFrame(rows)
-        sorted_df = df.sort_values(by='total_score', ascending=False)
-
-        return sorted_df.values.tolist()
+        # Sorting by descending order and choose top 20
+        recommender_output = sorted(rows, key = lambda x: x['total_score'],reverse = True)[:20]
+        return recommender_output
 
 
 with open('data/Users.json', 'r') as users:
@@ -210,6 +241,7 @@ with open('data/Properties.json', 'r') as properties:
     property_list = json.load(properties)
 
 
+'''
 active_user_id = 1
 for user in users_list:
     if user["user_id"] == active_user_id:
@@ -217,44 +249,9 @@ for user in users_list:
         break
 preferred_tag = active_user["preferred_environment"]
 print(preferred_tag)
-# Tags correlation table
-tags_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
-            "river", "ocean", "forest", "park", "national park", "state park", 
-            "national forest", "state forest", "modern","rustic","historic",
-            "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
-            "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"]
+'''
 
-correlation_table = {
-    "beach": [0.1,0.2,0.3,1.0,0.3,0.2,0.2,0.8,0.1,0.3,0.2,0.2,0.1,0.1,0.2,0.2,0.2,0.1,0.1,0.1,0.4,0.1,0.5,0.3,0.5,0.3,0.2,0.2,0.1,0.2],
-    "lake": [0.1,0.1,0.1,0.2,0.2,1.0,0.7,0.3,0.6,0.2,0.3,0.2,0.7,0.6,0.1,0.3,0.4,0.1,0.1,0.1,0.2,0.2,0.1,0.2,0.2,0.1,0.2,0.4,0.3,0.3],
-    "forest": [0.9,0.4,0.7,0.1,0.1,0.6,0.5,0.1,1.0,0.4,0.6,0.5,0.9,0.8,0.1,0.5,0.6,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.5,0.4,0.3,0.3],
-    "mountains": [1.0,0.2,0.7,0.1,0.1,0.1,0.1,0.1,0.9,0.2,0.3,0.2,0.8,0.7,0.1,0.5,0.6,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.1,0.2,0.6,0.5,0.3,0.4],
-    "nightlife": [0.2,0.1,0.2,0.3,0.1,0.1,0.1,0.3,0.2,0.2,0.2,0.2,0.2,0.2,0.1,0.1,0.1,0.1,0.1,0.1,0.3,0.2,1.0,0.2,0.5,0.3,0.1,0.1,0.2,0.2],
-    "remote": [0.2,1.0,0.5,0.2,0.1,0.1,0.1,0.1,0.4,0.2,0.2,0.2,0.4,0.3,0.1,0.3,0.3,0.1,0.1,0.1,0.2,0.1,0.1,0.2,0.1,0.1,0.3,0.2,0.2,0.3],
-    "glamping": [0.3,0.3,0.3,0.1,0.1,0.2,0.2,0.1,0.3,0.1,0.2,0.2,0.3,0.3,0.3,0.2,0.2,0.1,0.1,0.1,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,1.0,0.2],
-    "city": [0.1,0.1,0.1,0.3,1.0,0.2,0.2,0.2,0.1,0.3,0.1,0.1,0.1,0.1,0.7,0.3,0.2,0.1,0.1,0.1,0.5,0.8,0.6,0.1,0.6,0.6,0.6,0.1,0.1,0.2],
-    "modern": [0.1,0.1,0.1,0.2,0.7,0.1,0.1,0.2,0.1,0.2,0.2,0.2,0.1,0.1,1.0,0.4,0.3,0.1,0.1,0.3,0.4,0.6,0.1,0.2,0.5,0.3,0.1,0.1,0.3,0.3],
-    "historic": [0.6,0.3,0.5,0.2,0.2,0.4,0.4,0.2,0.6,0.2,0.3,0.3,0.6,0.5,0.3,0.6,1.0,0.1,0.1,0.2,0.3,0.2,0.1,0.2,0.2,0.2,0.3,0.3,0.2,0.3],
-}
-
-# Creating correlation data frame with zeros
-corr_df = pd.DataFrame(0.0, index=tags_pool, columns=tags_pool)
-
-# Fill rows from correlation_table (pad/truncate to tags_pool length)
-
-for tag, row in correlation_table.items():
-    # Making sure each row has the same length as our tags_pool. Our rows in correlation_table are shorter than tags_pool, so we pad them with zeros. Truncation is just a safeguard.
-    # So actually only row + [0.0] * (len(tags_pool)-len(row)) is running
-    if tag in corr_df.index:
-        r = (row + [0.0]*(len(tags_pool)-len(row)))[:len(tags_pool)]
-        corr_df.loc[tag] = r
-
-# Set self-correlation = 1 for every tag
-for t in tags_pool:
-    corr_df.loc[t, t] = 1.0
-
-
-recommender = ListingRecommender(property_list, corr_df)
+recommender = ListingRecommender(property_list)
 property_listing_calculated_scores = recommender.calculate_total_score(active_user)
 print('#' * 50)
 print(property_listing_calculated_scores)
