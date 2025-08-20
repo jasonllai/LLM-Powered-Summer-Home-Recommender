@@ -55,7 +55,7 @@ def sort_properties_aslist(props_list, attribute, asc=True):
 
 
 # similarly, this function sorts a given json file containing properties as dictionaries based on a user inputed sorting attribute and
-# returns a list of dictionaries, the sorting attribute must be formatted to be capitalized with spaces (i.e. "Property Location"), also 
+# returns a list of dictionaries, the sorting attribute must be formatted to be lowercase with underscores (i.e. 'guest_capacity'),  also 
 # have the option to put into descending order using ascending parameter
 def sort_properties_asjson(props_json, attribute, asc=True):
     with open(props_json, "r") as f:
