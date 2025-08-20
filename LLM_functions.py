@@ -54,7 +54,7 @@ OUTPUT RULES
 BEGIN JSON
 """).strip())
 
-# - If critical info is missing (dates/season, budget, interests, pace, mobility), ask up to 3 numbered follow-up questions. Otherwise proceed and state any assumptions.
+
 CHAT_PROMPT = Template(dedent("""
 You are TripBuddy, a helpful travel AI.
 
@@ -84,8 +84,33 @@ FORMAT
 TONE GUARDRAILS
 - Do not invent exact hours or prices; use ranges or “check hours”.
 - Avoid stereotypes; be respectful and inclusive.
+
+OUTPUT RULE
+- Respond immediately with the itinerary; do not say "I'm ready" or ask for a prompt again.
 """).strip())
 
+SYSTEM_PROMPT = dedent("""
+You are TripBuddy, a helpful travel AI.
+
+GOAL
+- Given a user's preferences, write a snappy destination blurb and tailored activities.
+
+STYLE
+- Friendly, concise, practical. Short paragraphs and bullets. No fluff.
+- Prefer ranges over fake precision (e.g., "$10–20", "20–30 min walk").
+- Safety first.
+
+CONTENT RULES
+- If info is missing, make reasonable assumptions and proceed. Do NOT ask the user to restate preferences.
+- Max 5 activity ideas; each with: name, 1‑line why, duration, best time, cost level (free/$/$$/$$$), booking recommended?, quick tip.
+- If # of days is given, add a simple morning/afternoon/evening plan per day.
+
+FORMAT
+- Blurb → "Top picks" bullets → optional "Day‑by‑day idea" → "Logistics & tips".
+
+OUTPUT RULE
+- Respond immediately with the itinerary; do not say "I'm ready" or ask for the prompt again.
+""").strip()
 
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -120,36 +145,6 @@ def get_response(prompt):
         raise RuntimeError(f"{r.status_code} {r.text}")
 
     raise RuntimeError("Rate limited after retries. Try a different model or add your own provider key.")
-
-    
-def generate_properties():
-    inp = input("The number of properties you want to generate: ")
-    if not inp.isdigit():
-        print("Please enter a valid number.")
-        return
-    num_properties = int(inp)
-    print("Generating properties...")
-    data_prompt = DATA_PROMPT.substitute(n=num_properties,
-                                         location_pool=", ".join(location_pool),
-                                         type_pool=", ".join(type_pool),
-                                         feature_pool=", ".join(feature_pool),
-                                         tag_pool=", ".join(tag_pool))
-    response = get_response(data_prompt)
-    props = extract_json_array(response)
-    append_properties_to_file(props)
-    print(f"Successfully generated {num_properties} properties!")
-
-
-def generate_suggestions():
-    print("\nHi, I'm TripBuddy, your AI travel assistant.\n")
-    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.")
-    print("Example input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.\n")
-    inp = input("Please enter your travel preferences: ")
-    inp = str(inp)
-    print("Generating suggestions...\n\n")
-    chat_prompt = CHAT_PROMPT.substitute(user_input=inp)
-    response = get_response(chat_prompt)
-    print(f"Here are some suggestions for you: \n{response}")
 
 
 def extract_json_array(text: str) -> list:
@@ -193,8 +188,72 @@ def append_properties_to_file(props: list, path: str = "data/Properties.json") -
         json.dump(merged, f, indent=2, ensure_ascii=False)
     return len(to_add)
 
-# generate_properties()
-generate_suggestions()
+
+def generate_properties():
+    inp = input("The number of properties you want to generate: ")
+    if not inp.isdigit():
+        print("Please enter a valid number.")
+        return
+    num_properties = int(inp)
+    print("Generating properties...")
+    data_prompt = DATA_PROMPT.substitute(n=num_properties,
+                                         location_pool=", ".join(location_pool),
+                                         type_pool=", ".join(type_pool),
+                                         feature_pool=", ".join(feature_pool),
+                                         tag_pool=", ".join(tag_pool))
+    response = get_response(data_prompt)
+    props = extract_json_array(response)
+    append_properties_to_file(props)
+    print(f"Successfully generated {num_properties} properties!")
+
+
+def generate_suggestions():
+    print("\nHi, I'm TripBuddy, your AI travel assistant.\n")
+    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.")
+    print("Example input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.\n")
+    inp = input("Please enter your travel preferences: ")
+    inp = str(inp)
+    print("Generating suggestions...\n\n")
+    chat_prompt = CHAT_PROMPT.substitute(user_input=inp)
+    response = get_response(chat_prompt)
+    print(f"Here are some suggestions for you: \n{response}")
 
 
 
+def get_response_messages(messages):
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": "google/gemini-2.0-flash-exp:free", "messages": messages, "temperature": 0.7}
+    max_retries = 10
+    for attempt in range(max_retries):
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
+        if r.status_code == 200:
+            data = r.json()
+            return data["choices"][0]["message"]["content"]
+        if r.status_code == 429:
+            retry_after = r.headers.get("retry-after")
+            wait = int(retry_after) if retry_after else (2 ** attempt)
+            time.sleep(wait); continue
+        raise RuntimeError(f"{r.status_code} {r.text}")
+    raise RuntimeError("Rate limited after retries.")
+
+
+def generate_suggestions_text(user_input: str = "", messages: list | None = None) -> str:
+    # If the frontend sends history, prepend system and forward as-is
+    if messages and isinstance(messages, list):
+        msgs = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+        return get_response_messages(msgs)
+
+    # Single-turn fallback
+    text = (user_input or "").strip()
+    if not text:
+        text = "3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion."
+    msgs = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": text},
+    ]
+    return get_response_messages(msgs)
+
+
+# if __name__ == "__main__":
+#     generate_suggestions()

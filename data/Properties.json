@@ -8,30 +8,7 @@
       "city skyline view",
       "balcony or patio",
       "full kitchen",
-      "fast wifi",
-      "air conditioning",
-      "washer and dryer"
-    ],
-    "tags": [
-      "city",
-      "modern",
-      "family-friendly",
-      "nightlife",
-      "business-travel"
-    ],
-    "guest_capacity": 4,
-    "unavailable_dates": []
-  },
-  {
-    "property_id": "b2c3d4e5-f6a7-4890-a123-4567890abcdef",
-    "location": "Toronto",
-    "type": "loft",
-    "price_per_night": 300,
-    "features": [
-      "city skyline view",
-      "rooftop terrace",
-      "full kitchen",
-      "air conditioning",
+      "washer and dryer",
       "fast wifi",
       "dedicated workspace",
       "smart TV with streaming"
@@ -39,49 +16,77 @@
     "tags": [
       "city",
       "modern",
+      "family-friendly",
       "business-travel",
       "nightlife"
+    ],
+    "guest_capacity": 4,
+    "unavailable_dates": []
+  },
+  {
+    "property_id": "b2c3d4e5-f6a7-4890-9123-4567890abcde",
+    "location": "Toronto",
+    "type": "loft",
+    "price_per_night": 300,
+    "features": [
+      "city skyline view",
+      "balcony or patio",
+      "fireplace",
+      "full kitchen",
+      "washer and dryer",
+      "fast wifi",
+      "dedicated workspace",
+      "smart TV with streaming"
+    ],
+    "tags": [
+      "city",
+      "modern",
+      "romantic",
+      "business-travel",
+      "nightlife",
+      "foodie"
     ],
     "guest_capacity": 2,
     "unavailable_dates": []
   },
   {
-    "property_id": "c3d4e5f6-a7b8-4901-b234-567890abcdef0",
+    "property_id": "c3d4e5f6-a7b8-4901-9234-567890abcdef",
     "location": "Montreal",
     "type": "cottage",
-    "price_per_night": 200,
+    "price_per_night": 100,
     "features": [
-      "riverfront",
+      "lakefront",
       "balcony or patio",
-      "fireplace",
-      "full kitchen",
       "BBQ grill",
+      "full kitchen",
       "washer and dryer",
-      "pet-friendly"
+      "pet-friendly",
+      "heating"
     ],
     "tags": [
-      "river",
+      "lake",
       "remote",
       "family-friendly",
       "pet-friendly",
-      "romantic"
+      "romantic",
+      "long-term"
     ],
     "guest_capacity": 6,
     "unavailable_dates": []
   },
   {
-    "property_id": "d4e5f6a7-b8c9-4012-c345-67890abcdef01",
+    "property_id": "d4e5f6a7-b8c9-5012-9345-67890abcdef0",
     "location": "Calgary",
     "type": "cabin",
-    "price_per_night": 100,
+    "price_per_night": 250,
     "features": [
       "mountain view",
       "fireplace",
       "full kitchen",
       "BBQ grill",
-      "heating",
+      "fast wifi",
       "pet-friendly",
-      "free parking"
+      "heating"
     ],
     "tags": [
       "mountains",
@@ -94,54 +99,57 @@
     "unavailable_dates": []
   },
   {
-    "property_id": "e5f6a7b8-c9d0-4123-d456-7890abcdef012",
+    "property_id": "e5f6a7b8-c9d0-5123-9456-7890abcdef12",
     "location": "Edmonton",
     "type": "villa",
     "price_per_night": 800,
     "features": [
       "private pool",
-      "full kitchen",
+      "private hot tub",
       "chef's kitchen",
-      "air conditioning",
+      "BBQ grill",
       "fast wifi",
-      "smart TV with streaming",
-      "garage"
+      "game room",
+      "air conditioning",
+      "heating"
     ],
     "tags": [
       "city",
       "modern",
       "family-friendly",
-      "golf",
-      "spa"
+      "romantic",
+      "spa",
+      "golf"
     ],
     "guest_capacity": 10,
     "unavailable_dates": []
   },
   {
-    "property_id": "f6a7b8c9-d0e1-4234-e567-890abcdef0123",
+    "property_id": "f6a7b8c9-d0e1-5234-9567-890abcdef123",
     "location": "Winnipeg",
     "type": "tiny house",
     "price_per_night": 75,
     "features": [
+      "riverfront",
       "full kitchen",
-      "heating",
-      "washer and dryer",
+      "BBQ grill",
       "fast wifi",
-      "dedicated workspace",
-      "pet-friendly"
+      "pet-friendly",
+      "heating"
     ],
     "tags": [
-      "lake",
+      "river",
       "remote",
       "eco-friendly",
       "pet-friendly",
-      "long-term"
+      "romantic",
+      "adventure"
     ],
     "guest_capacity": 2,
     "unavailable_dates": []
   },
   {
-    "property_id": "a7b8c9d0-e1f2-4345-f678-abcdef012345",
+    "property_id": "a7b8c9d0-e1f2-5345-9678-90abcdef1234",
     "location": "Halifax",
     "type": "studio",
     "price_per_night": 90,
@@ -151,54 +159,57 @@
       "balcony or patio",
       "full kitchen",
       "fast wifi",
+      "pet-friendly",
       "air conditioning",
-      "washer and dryer"
+      "heating"
     ],
     "tags": [
       "ocean",
       "beach",
       "city",
+      "pet-friendly",
       "romantic",
-      "long-term"
+      "nightlife"
     ],
     "guest_capacity": 2,
     "unavailable_dates": []
   },
   {
-    "property_id": "b8c9d0e1-f2a3-4456-a789-bcdef0123456",
+    "property_id": "b8c9d0e1-f2a3-5456-9789-0abcdef12345",
     "location": "Victoria",
     "type": "cottage",
-    "price_per_night": 250,
+    "price_per_night": 120,
     "features": [
       "oceanfront",
       "beach access",
-      "private hot tub",
-      "full kitchen",
+      "balcony or patio",
       "BBQ grill",
+      "full kitchen",
       "pet-friendly",
-      "free parking"
+      "air conditioning",
+      "heating"
     ],
     "tags": [
       "ocean",
       "beach",
-      "romantic",
+      "city",
       "family-friendly",
       "pet-friendly",
-      "spa"
+      "romantic"
     ],
-    "guest_capacity": 6,
+    "guest_capacity": 5,
     "unavailable_dates": []
   },
   {
-    "property_id": "c9d0e1f2-a3b4-4567-b890-cdef01234567",
+    "property_id": "c9d0e1f2-a3b4-5567-9890-abcdef123456",
     "location": "Quebec City",
     "type": "loft",
-    "price_per_night": 400,
+    "price_per_night": 200,
     "features": [
       "city skyline view",
       "fireplace",
       "full kitchen",
-      "air conditioning",
+      "washer and dryer",
       "fast wifi",
       "dedicated workspace",
       "smart TV with streaming"
@@ -206,27 +217,26 @@
     "tags": [
       "city",
       "historic",
+      "family-friendly",
       "romantic",
-      "nightlife",
       "business-travel",
-      "foodie"
+      "nightlife"
     ],
-    "guest_capacity": 4,
+    "guest_capacity": 3,
     "unavailable_dates": []
   },
   {
-    "property_id": "d0e1f2a3-b4c5-4678-c901-def012345678",
+    "property_id": "d0e1f2a3-b4c5-5678-9901-bcdef1234567",
     "location": "Fredericton",
     "type": "cabin",
-    "price_per_night": 120,
+    "price_per_night": 80,
     "features": [
       "riverfront",
       "fireplace",
-      "full kitchen",
       "BBQ grill",
-      "heating",
+      "full kitchen",
       "pet-friendly",
-      "free parking"
+      "heating"
     ],
     "tags": [
       "river",
@@ -234,13 +244,13 @@
       "family-friendly",
       "pet-friendly",
       "rustic",
-      "long-term"
+      "forest"
     ],
-    "guest_capacity": 5,
+    "guest_capacity": 4,
     "unavailable_dates": []
   },
   {
-    "property_id": "a1b2c3d4-e5f6-4789-9abc-def012345678",
+    "property_id": "a1b2c3d4-e5f6-4789-9012-345678901234",
     "location": "Vancouver",
     "type": "apartment",
     "price_per_night": 150,
@@ -248,100 +258,93 @@
       "city skyline view",
       "balcony or patio",
       "full kitchen",
-      "washer and dryer",
       "fast wifi",
-      "dedicated workspace",
-      "pet-friendly"
+      "air conditioning",
+      "washer and dryer"
     ],
     "tags": [
       "city",
-      "modern",
       "family-friendly",
-      "pet-friendly",
-      "business-travel",
-      "nightlife"
+      "modern",
+      "nightlife",
+      "romantic"
     ],
     "guest_capacity": 4,
     "unavailable_dates": []
   },
   {
-    "property_id": "b2c3d4e5-f6a7-4890-abcd-ef0123456789",
+    "property_id": "b2c3d4e5-f6a7-4890-a123-456789012345",
     "location": "Toronto",
     "type": "loft",
     "price_per_night": 250,
     "features": [
       "city skyline view",
       "balcony or patio",
-      "private hot tub",
       "full kitchen",
-      "washer and dryer",
       "fast wifi",
-      "smart TV with streaming",
-      "air conditioning"
+      "air conditioning",
+      "washer and dryer",
+      "dedicated workspace"
     ],
     "tags": [
       "city",
-      "modern",
-      "romantic",
       "business-travel",
-      "nightlife",
-      "spa"
+      "modern",
+      "nightlife"
     ],
     "guest_capacity": 2,
     "unavailable_dates": []
   },
   {
-    "property_id": "c3d4e5f6-a7b8-4901-bcde-f0123456789a",
+    "property_id": "c3d4e5f6-a7b8-4901-b234-567890123456",
     "location": "Montreal",
     "type": "cottage",
     "price_per_night": 100,
     "features": [
       "riverfront",
-      "balcony or patio",
       "fireplace",
-      "BBQ grill",
       "full kitchen",
+      "BBQ grill",
+      "pet-friendly",
       "heating",
-      "pet-friendly"
+      "washer and dryer"
     ],
     "tags": [
       "river",
-      "remote",
       "family-friendly",
       "pet-friendly",
-      "romantic",
-      "rustic"
+      "rustic",
+      "remote"
     ],
     "guest_capacity": 6,
     "unavailable_dates": []
   },
   {
-    "property_id": "d4e5f6a7-b8c9-4012-cdef-0123456789ab",
+    "property_id": "d4e5f6a7-b8c9-4012-c345-678901234567",
     "location": "Calgary",
     "type": "cabin",
     "price_per_night": 120,
     "features": [
       "mountain view",
       "fireplace",
-      "BBQ grill",
       "full kitchen",
+      "BBQ grill",
       "heating",
-      "fast wifi",
-      "pet-friendly"
+      "washer and dryer",
+      "free parking"
     ],
     "tags": [
       "mountains",
       "remote",
       "adventure",
       "family-friendly",
-      "pet-friendly",
       "rustic"
     ],
     "guest_capacity": 8,
     "unavailable_dates": []
   },
   {
-    "property_id": "e5f6a7b8-c9d0-4123-defa-123456789abc",
+    "property_id": "e5f6a7b8-c9d0-4123-d456-789012345678",
     "location": "Edmonton",
     "type": "tiny house",
     "price_per_night": 80,
@@ -349,91 +352,33 @@
       "full kitchen",
       "heating",
       "fast wifi",
-      "dedicated workspace",
-      "pet-friendly",
-      "free parking"
+      "free parking",
+      "pet-friendly"
     ],
     "tags": [
-      "remote",
       "eco-friendly",
-      "family-friendly",
+      "remote",
       "pet-friendly",
-      "rustic"
+      "rustic",
+      "family-friendly"
     ],
     "guest_capacity": 2,
     "unavailable_dates": []
   },
   {
-    "property_id": "f6a7b8c9-d0e1-4234-efab-23456789abcd",
+    "property_id": "f6a7b8c9-d0e1-4234-e567-890123456789",
     "location": "Winnipeg",
-    "type": "villa",
-    "price_per_night": 300,
+    "type": "studio",
+    "price_per_night": 70,
     "features": [
-      "lakefront",
-      "private hot tub",
-      "private pool",
       "full kitchen",
-      "BBQ grill",
-      "washer and dryer",
       "fast wifi",
       "air conditioning",
-      "free parking"
-    ],
-    "tags": [
-      "lake",
-      "family-friendly",
-      "romantic",
-      "spa",
-      "long-term",
-      "pet-friendly"
-    ],
-    "guest_capacity": 10,
-    "unavailable_dates": []
-  },
-  {
-    "property_id": "7a8b9c0d-1e2f-4345-fabc-3456789abcde",
-    "location": "Halifax",
-    "type": "cottage",
-    "price_per_night": 180,
-    "features": [
-      "oceanfront",
-      "beach access",
-      "balcony or patio",
-      "fireplace",
-      "full kitchen",
-      "washer and dryer",
-      "fast wifi",
-      "pet-friendly"
-    ],
-    "tags": [
-      "ocean",
-      "beach",
-      "family-friendly",
-      "pet-friendly",
-      "romantic",
-      "long-term"
-    ],
-    "guest_capacity": 6,
-    "unavailable_dates": []
-  },
-  {
-    "property_id": "8b9c0d1e-2f3a-4456-bcde-456789abcdef",
-    "location": "Victoria",
-    "type": "studio",
-    "price_per_night": 90,
-    "features": [
-      "balcony or patio",
-      "full kitchen",
       "heating",
-      "fast wifi",
-      "dedicated workspace",
-      "pet-friendly"
+      "washer and dryer"
     ],
     "tags": [
       "city",
-      "park",
-      "family-friendly",
-      "pet-friendly",
       "business-travel",
       "modern"
     ],
@@ -441,47 +386,95 @@
     "unavailable_dates": []
   },
   {
-    "property_id": "9c0d1e2f-3a4b-4567-cdef-56789abcdef0",
-    "location": "Quebec City",
-    "type": "apartment",
-    "price_per_night": 160,
+    "property_id": "a7b8c9d0-e1f2-4345-f678-901234567890",
+    "location": "Halifax",
+    "type": "villa",
+    "price_per_night": 400,
     "features": [
-      "city skyline view",
+      "oceanfront",
+      "private pool",
+      "full kitchen",
+      "chef's kitchen",
+      "BBQ grill",
+      "air conditioning",
+      "washer and dryer",
+      "fast wifi"
+    ],
+    "tags": [
+      "ocean",
+      "beach",
+      "family-friendly",
+      "romantic",
+      "spa",
+      "long-term"
+    ],
+    "guest_capacity": 10,
+    "unavailable_dates": []
+  },
+  {
+    "property_id": "b8c9d0e1-f2a3-4456-a789-012345678901",
+    "location": "Victoria",
+    "type": "cottage",
+    "price_per_night": 180,
+    "features": [
+      "oceanfront",
+      "beach access",
       "balcony or patio",
       "full kitchen",
+      "BBQ grill",
+      "pet-friendly",
       "washer and dryer",
+      "fast wifi"
+    ],
+    "tags": [
+      "ocean",
+      "beach",
+      "family-friendly",
+      "pet-friendly",
+      "romantic"
+    ],
+    "guest_capacity": 5,
+    "unavailable_dates": []
+  },
+  {
+    "property_id": "c9d0e1f2-a3b4-4567-b890-123456789012",
+    "location": "Quebec City",
+    "type": "apartment",
+    "price_per_night": 130,
+    "features": [
+      "city skyline view",
+      "full kitchen",
       "fast wifi",
       "air conditioning",
-      "historic"
+      "washer and dryer",
+      "dedicated workspace"
     ],
     "tags": [
       "city",
       "historic",
       "family-friendly",
       "romantic",
-      "nightlife",
-      "foodie"
+      "nightlife"
     ],
-    "guest_capacity": 4,
+    "guest_capacity": 3,
     "unavailable_dates": []
   },
   {
-    "property_id": "0d1e2f3a-4b5c-4678-def0-6789abcdef01",
+    "property_id": "d0e1f2a3-b4c5-4678-c901-234567890123",
     "location": "Fredericton",
     "type": "cabin",
-    "price_per_night": 110,
+    "price_per_night": 90,
     "features": [
       "riverfront",
       "fireplace",
-      "BBQ grill",
       "full kitchen",
+      "BBQ grill",
       "heating",
-      "pet-friendly",
-      "free parking"
+      "washer and dryer",
+      "pet-friendly"
     ],
     "tags": [
       "river",
-      "forest",
       "remote",
       "family-friendly",
       "pet-friendly",
