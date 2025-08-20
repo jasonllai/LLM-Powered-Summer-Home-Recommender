@@ -93,8 +93,7 @@
       "remote",
       "adventure",
       "family-friendly",
-      "pet-friendly",
-      "rustic"
+      "pet-friendly"
     ],
     "guest_capacity": 8,
     "unavailable_dates": []
