@@ -125,29 +125,13 @@ class ListingRecommender():
 with open('data/Users.json', 'r') as users:
     users_list = json.load(users)
 
-<<<<<<< HEAD:Recommender_Logic.py
-with open('data/Properties.json', 'r') as properties:
-    property_list = json.load(properties)
-
-
-
-=======
->>>>>>> 1c10826 (Lines between 124 an 133 is the example user with id1. When you complete your work I'll delete it. Just copy and paste 134 and 135 to the main function. Give the calculate_total_score function user dictionary.):Recommender Logic.py
 active_user_id = 1
 for user in users_list:
     if user["user_id"] == active_user_id:
         active_user = user
         break
-<<<<<<< HEAD:Recommender_Logic.py
-preferred_tag = active_user["preferred_environment"]
-print(preferred_tag)
-
-
-recommender = ListingRecommender(property_list)
-=======
     
 recommender = ListingRecommender()
->>>>>>> 1c10826 (Lines between 124 an 133 is the example user with id1. When you complete your work I'll delete it. Just copy and paste 134 and 135 to the main function. Give the calculate_total_score function user dictionary.):Recommender Logic.py
 property_listing_calculated_scores = recommender.calculate_total_score(active_user)
 print('#' * 50)
 # print(property_listing_calculated_scores)
