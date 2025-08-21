@@ -27,10 +27,29 @@
         <div class="field"><label>Price min ($)</label><input id="f-price-min" type="number" class="filter"></div>
         <div class="field"><label>Price max ($)</label><input id="f-price-max" type="number" class="filter"></div>
         <div class="field"><label>Guest capacity</label><input id="f-capacity" type="number" class="filter"></div>
-        <div class="row" style="align-items:flex-end"><button id="reset" class="btn outline" type="button">Reset</button></div>
-        <div class="field" style="grid-column:1/-1">
+
+        <div class="field">
+          <label>Features</label>
+          <div class="multi">
+            <button id="btn-features" class="btn outline sm" type="button">Any features</button>
+            <div id="dd-features" class="menu hidden"></div>
+          </div>
+        </div>
+
+        <div class="field">
           <label>Tags</label>
-          <div id="f-tags" class="pills"></div>
+          <div class="multi">
+            <button id="btn-tags" class="btn outline sm" type="button">Any tags</button>
+            <div id="dd-tags" class="menu hidden"></div>
+          </div>
+        </div>
+
+        <div class="field actions">
+          <label>&nbsp;</label>
+          <div class="buttons">
+            <button id="search" class="btn" type="button">Search</button>
+            <button id="reset" class="btn outline" type="button">Reset</button>
+          </div>
         </div>
       </div>
     </div>

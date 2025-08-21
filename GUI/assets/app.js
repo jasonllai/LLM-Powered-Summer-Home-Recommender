@@ -162,13 +162,41 @@ function initSearch(){
   qs("#logout")?.addEventListener("click", logoutAll);
   // fill filters
   const props = DB.properties;
-  const locations = [...new Set(props.map(p => p.location.split(",")[0]))].sort();
-  const types = [...new Set(props.map(p => p.type))].sort();
-  const tags = [...new Set(props.flatMap(p => p.tags))].sort();
+  const types = ["cabin", "apartment", "cottage", "loft", "villa", "tiny house", "studio"];
+  const locations = ["Vancouver", "Toronto", "Montreal", "Calgary", "Edmonton", 
+    "Winnipeg", "Halifax", "Victoria", "Quebec City", "Fredericton"];
+  const tags = ["mountains", "remote", "adventure", "beach", "city", "lake", 
+    "river", "ocean", "forest", "park", "national park", "state park", 
+    "national forest", "state forest", "modern","rustic","historic",
+    "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
+    "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"];
+  const features = ["mountain view", "city skyline view", "lakefront", "riverfront",
+    "oceanfront", "beach access", "balcony or patio", "rooftop terrace",
+    "private hot tub", "sauna", "private pool", "fireplace", "houskeeper service",
+    "BBQ grill", "full kitchen", "chef's kitchen", "EV charger", "free parking",
+    "garage", "air conditioning", "heating", "washer and dryer", "fast wifi",
+    "dedicated workspace", "smart TV with streaming", "game room", "fitness room",
+    "ski-in/ski-out", "wheelchair accessible", "pet-friendly"];
 
   const locSel = qs("#f-location"); locSel.innerHTML = `<option value="">Any</option>` + locations.map(l=>`<option>${l}</option>`).join("");
   const typeSel = qs("#f-type"); typeSel.innerHTML = `<option value="">Any</option>` + types.map(t=>`<option>${t}</option>`).join("");
-  const tagWrap = qs("#f-tags"); tagWrap.innerHTML = tags.map(t=>`<label class="pill"><input type="checkbox" value="${t}"> ${t}</label>`).join("");
+
+  function buildMulti(btnSel, ddSel, items, anyLabel){
+    const btn = qs(btnSel), dd = qs(ddSel);
+    dd.innerHTML = items.map(v=>`<label class="option"><span>${v}</span><input type="checkbox" value="${v}"></label>`).join("");
+    const update = ()=>{
+      const sel = Array.from(dd.querySelectorAll("input:checked")).map(i=>i.value);
+      btn.textContent = sel.length ? `${sel.length} selected` : anyLabel;
+    };
+    btn.addEventListener("click", ()=> dd.classList.toggle("hidden"));
+    dd.addEventListener("change", update);
+    document.addEventListener("click", (e)=>{ if(!btn.contains(e.target) && !dd.contains(e.target)) dd.classList.add("hidden"); });
+    update();
+    return { get: ()=>Array.from(dd.querySelectorAll("input:checked")).map(i=>i.value),
+             clear: ()=>{ dd.querySelectorAll("input:checked").forEach(i=>i.checked=false); update(); } };
+  }
+  const msFeatures = buildMulti("#btn-features", "#dd-features", features, "Any features");
+  const msTags = buildMulti("#btn-tags", "#dd-tags", tags, "Any tags");
 
   // recommendations
   function score(p){
@@ -178,35 +206,6 @@ function initSearch(){
   }
   let recs = props.slice().sort((a,b)=>score(b)-score(a));
   renderList(recs);
-
-  // filter logic
-  qsa(".filter").forEach(el => el.addEventListener("input", applyFilters));
-  function applyFilters(){
-    const start = qs("#f-start").value, end = qs("#f-end").value;
-    const loc = qs("#f-location").value;
-    const typ = qs("#f-type").value;
-    const pmin = qs("#f-price-min").value, pmax = qs("#f-price-max").value;
-    const cap = qs("#f-capacity").value;
-    const selected = qsa("#f-tags input:checked").map(i=>i.value);
-
-    let list = recs.filter(p=>{
-      if(loc && !p.location.startsWith(loc)) return false;
-      if(typ && p.type!==typ) return false;
-      if(pmin && p.pricePerNight < Number(pmin)) return false;
-      if(pmax && p.pricePerNight > Number(pmax)) return false;
-      if(cap && p.guestCapacity < Number(cap)) return false;
-      if(selected.length && !selected.every(t=>p.tags.includes(t))) return false;
-      if(start && end && !isAvailable(p, start, end)) return false;
-      return true;
-    });
-    renderList(list);
-  }
-  qs("#reset")?.addEventListener("click", ()=>{
-    qsa(".filter").forEach(f=>{
-      if(f.type==="checkbox") f.checked=false; else f.value="";
-    });
-    renderList(recs);
-  });
 
   function renderList(list){
     const wrap = qs("#results"); if(!wrap) return;
@@ -234,6 +233,52 @@ function initSearch(){
         </div>
       </div>
     `).join("");
+
+
+    // filter logic
+    function buildFilters(){
+      return {
+        start: qs("#f-start").value,
+        end: qs("#f-end").value,
+        loc: qs("#f-location").value,
+        typ: qs("#f-type").value,
+        pmin: qs("#f-price-min").value,
+        pmax: qs("#f-price-max").value,
+        cap: qs("#f-capacity").value,
+        features: msFeatures.get(),
+        tags: msTags.get()
+      };
+    }
+    
+    async function runSearch(){
+      const f = buildFilters();
+      if(USE_LOCAL){
+        let list = recs.filter(p=>{
+          if(f.loc && !p.location.startsWith(f.loc)) return false;
+          if(f.typ && p.type!==f.typ) return false;
+          if(f.pmin && p.pricePerNight < Number(f.pmin)) return false;
+          if(f.pmax && p.pricePerNight > Number(f.pmax)) return false;
+          if(f.cap && p.guestCapacity < Number(f.cap)) return false;
+          if(f.features.length && !f.features.every(x=>p.features.includes(x))) return false;
+          if(f.tags.length && !f.tags.every(x=>p.tags.includes(x))) return false;
+          if(f.start && f.end && !isAvailable(p, f.start, f.end)) return false;
+          return true;
+        });
+        renderList(list);
+      }else{
+        // Hook for your Python backend:
+        // const res = await fetch(`${API_BASE}/search`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(f) });
+        // const list = await res.json();
+        // renderList(list);
+      }
+    }
+    
+    qs("#search")?.addEventListener("click", runSearch);
+    qs("#reset")?.addEventListener("click", ()=>{
+      qsa(".filter").forEach(f=>{ if(f.type==="checkbox") f.checked=false; else f.value=""; });
+      msFeatures.clear(); msTags.clear();
+      renderList(recs);
+    });
 
     // attach events
     qsa("[data-book]").forEach(b=>{
@@ -270,15 +315,17 @@ function initSearch(){
   fab.textContent = "🤖";
   document.body.appendChild(fab);
 
-  // Hint bubble
+  // Hint bubble (persistent))
   const hint = document.createElement("div");
   hint.className = "ai-hint";
   hint.textContent = "Ask our AI Assistant for travel blurbs & activity ideas!";
+  hint.setAttribute("role","button");
+  hint.tabIndex = 0;
   document.body.appendChild(hint);
-  const hideHint = ()=>{ hint.classList.add("hidden"); sessionStorage.setItem("ai-hint-shown","1"); };
-  if(sessionStorage.getItem("ai-hint-shown")==="1") hint.classList.add("hidden");
-  setTimeout(hideHint, 5000);
-  hint.addEventListener("click", hideHint);
+
+  // clicking the hint also opens the assistant
+  hint.addEventListener("click", openModal);
+  hint.addEventListener("keypress", (e)=>{ if(e.key==="Enter" || e.key===" ") openModal(); });
 
   // Modal
   const overlay = document.createElement("div");
@@ -355,7 +402,7 @@ function initSearch(){
   }
   function closeModal(){ overlay.classList.add("hidden"); }
 
-  fab.addEventListener("click", ()=>{ openModal(); hideHint(); });
+  fab.addEventListener("click", openModal);
   overlay.querySelector(".ai-min").addEventListener("click", closeModal);
 
   async function assistantReply(prompt){
