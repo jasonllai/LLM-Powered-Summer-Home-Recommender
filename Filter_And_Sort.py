@@ -2,30 +2,30 @@ import json
 from datetime import datetime, timedelta
 from Functions import Property
 
-# function that takes in a json file of properties and filters them according to user inputted attributes and returns a subset of the original 
+# function that filters all properties from json file according to user inputted attributes and returns a subset of the original 
 # properties that meets the filtering criteria as a list of Property objects
-def filter_properties(props_json, group_size=None, min_price=None, max_price=None, features=None, tags=None, prop_type=None, location=None, 
+def filter_properties(group_size=None, min_price=None, max_price=None, features=None, tags=None, prop_type=None, location=None, 
                       start_date=None, end_date=None):
     # reads properties from json as list of dictionaries
-    with open(props_json, "r") as f:
+    with open("data/Properties.json", "r") as f:
         loaded_properties = json.load(f)
 
     # checking for properties that are an exact match for the user provided filters
     filtered = loaded_properties
     if group_size is not None: 
-        filtered = [p for p in filtered if p["Guest Capacity"] >= group_size]
+        filtered = [p for p in filtered if p["guest_capacity"] >= group_size]
     if min_price is not None:
-        filtered = [p for p in filtered if p["Price per Night"] >= min_price]
+        filtered = [p for p in filtered if p["price_per_night"] >= min_price]
     if max_price is not None:
-        filtered = [p for p in filtered if p["Price per Night"] <= max_price]
+        filtered = [p for p in filtered if p["price_per_night"] <= max_price]
     if features is not None:
-        filtered = [p for p in filtered if set(features).issubset(p["Features"])]
+        filtered = [p for p in filtered if set(features).issubset(p["features"])]
     if tags is not None:
-        filtered = [p for p in filtered if set(tags).issubset(p["Tags"])]
+        filtered = [p for p in filtered if set(tags).issubset(p["tags"])]
     if prop_type is not None:
-        filtered = [p for p in filtered if p["Property Type"] == prop_type]
+        filtered = [p for p in filtered if p["type"] == prop_type]
     if location is not None:
-        filtered = [p for p in filtered if p["Property Location"] == location]
+        filtered = [p for p in filtered if p["location"] == location]
     # filter on the provided dates if the user enters at least one date to filter on
     if ((start_date or end_date) != None): 
         if start_date: 
