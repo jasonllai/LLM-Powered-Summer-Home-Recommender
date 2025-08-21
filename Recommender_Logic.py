@@ -241,7 +241,7 @@ with open('data/Properties.json', 'r') as properties:
     property_list = json.load(properties)
 
 
-'''
+
 active_user_id = 1
 for user in users_list:
     if user["user_id"] == active_user_id:
@@ -249,10 +249,16 @@ for user in users_list:
         break
 preferred_tag = active_user["preferred_environment"]
 print(preferred_tag)
-'''
+
 
 recommender = ListingRecommender(property_list)
 property_listing_calculated_scores = recommender.calculate_total_score(active_user)
 print('#' * 50)
-print(property_listing_calculated_scores)
+# print(property_listing_calculated_scores)
 print('#' * 50)
+
+properties_df = pd.DataFrame(property_listing_calculated_scores)
+properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
+properties_df = properties_df.drop(columns=["total_score"])
+properties_df["property_index"] = properties_df.index
+print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])

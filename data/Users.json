@@ -1,18 +1,26 @@
 [
     {
-      "user_id": 1,
-      "name": "Alice",
-      "group_size": 2,
-      "preferred_environment": "beach",
-      "budget_range": [100, 200],
-      "travel_dates": ["2025-08-15", "2025-08-20"]
+        "user_id": 1,
+        "name": "Alice",
+        "password": null,
+        "booking_history": [],
+        "group_size": 2,
+        "preferred_environment": "beach",
+        "budget_range": [
+            100,
+            1000
+        ]
     },
     {
-      "user_id": 2,
-      "name": "Bob",
-      "group_size": 4,
-      "preferred_environment": "mountains",
-      "budget_range": [200, 350],
-      "travel_dates": ["2025-10-15", "2025-11-02"]
+        "user_id": 2,
+        "name": "Bob",
+        "password": null,
+        "booking_history": [],
+        "group_size": 4,
+        "preferred_environment": "mountains",
+        "budget_range": [
+            200,
+            350
+        ]
     }
-  ]
+]
