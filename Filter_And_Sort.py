@@ -40,7 +40,7 @@ def filter_properties(group_size=None, min_price=None, max_price=None, features=
             start_date = end_date - timedelta(days=7) 
         # creating a list of all dates between start and end date
         date_range = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)] 
-        filtered = [p for p in filtered if not set(p["Unavailable Dates"]).issubset(date_range)]
+        filtered = [p for p in filtered if not set(p["unavailable_dates"]).issubset(date_range)]
 
     # convert properties that meet all filter attributes to a list of Property objects to be returned
     filtered_props = [Property.from_dict(prop) for prop in filtered]
@@ -54,11 +54,11 @@ def sort_properties_aslist(props_list, attribute, asc=True):
     return sorted(props_list, key=lambda x: getattr(x, attribute), reverse=not asc)
 
 
-# similarly, this function sorts a given json file containing properties as dictionaries based on a user inputed sorting attribute and
+# similarly, this function sorts our json file containing properties as dictionaries based on a user inputed sorting attribute and
 # returns a list of dictionaries, the sorting attribute must be formatted to be lowercase with underscores (i.e. 'guest_capacity'),  also 
 # have the option to put into descending order using ascending parameter
-def sort_properties_asjson(props_json, attribute, asc=True):
-    with open(props_json, "r") as f:
+def sort_properties_asjson(attribute, asc=True):
+    with open("data/Properties.json", "r") as f:
         loaded_properties = json.load(f) # reads props from json file as list of dicts 
     sorted_properties = sorted(loaded_properties, key=lambda x: x[attribute], reverse=not(asc)) # sort the list of dictionaries
     return sorted_properties
