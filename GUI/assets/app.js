@@ -385,15 +385,8 @@ function initSearch(){
     chat.scrollTop = chat.scrollHeight;
     thread.push({ role: who==="me" ? "user" : "assistant", content: text });
   }
-  // function addMsg(who, text){
-  //   const el = document.createElement("div");
-  //   el.className = "ai-msg " + (who==="me" ? "me" : "ai");
-  //   el.innerHTML = `<div class="bubble">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
-  //   chat.appendChild(el); chat.scrollTop = chat.scrollHeight;
-  //   thread.push({ role: who==="me" ? "user" : "assistant", content: text });
-  // }
 
-  const initialMsg = "Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.\nExample input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.";
+  const initialMsg = "Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.\n\nExample input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace.";
   let seeded = false;
 
   function openModal(){
@@ -435,8 +428,24 @@ function initSearch(){
     if(!text) return;
     addMsg("me", text);
     input.value = "";
-    const reply = await assistantReply(text);
-    addMsg("ai", reply);
+  
+    // show immediate placeholder (not added to thread)
+    const wrap = document.createElement("div");
+    wrap.className = "ai-msg ai";
+    wrap.innerHTML = `<div class="bubble">Generating… This may take a few minutes. Thank you for your patience.</div>`;
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+    const bubble = wrap.querySelector(".bubble");
+  
+    // get real reply and swap the placeholder
+    try{
+      const reply = await assistantReply(text);
+      bubble.innerHTML = renderRich(reply);
+      thread.push({ role: "assistant", content: reply }); // keep conversation history
+    }catch(err){
+      console.error(err);
+      bubble.textContent = "Sorry, something went wrong. Please try again.";
+    }
   });
 }
 
