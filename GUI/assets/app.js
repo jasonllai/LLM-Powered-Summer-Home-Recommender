@@ -107,7 +107,17 @@ function initProfile(){
   // booking history
   const list = qs("#bookings");
   if(user.bookingHistory?.length){
-    list.innerHTML = user.bookingHistory.map(b => `<div class="flex-between small"><span class="kbd">${b.propertyId.slice(0,8)}</span><span>${b.start} → ${b.end} · ${money(b.price)}/night</span></div>`).join("");
+    list.innerHTML = user.bookingHistory.map(b => {
+      const p = (DB.properties||[]).find(x=>x.id===b.propertyId);
+      const name = p ? `${p.type} in ${p.location}` : "Property";
+      return `<div class="booking-item">
+        <div class="left">
+          <div class="name"><strong>${name}</strong></div>
+          <div class="kbd small">${b.propertyId.slice(0,8)}</div>
+        </div>
+        <div class="right small">${b.start} → ${b.end} · ${money(b.price)}/night</div>
+      </div>`;
+    }).join("");
   } else list.innerHTML = `<div class="small">No bookings yet.</div>`;
   qsa("[data-edit]").forEach(btn => {
     btn.addEventListener("click", ()=>{
@@ -211,18 +221,24 @@ function initSearch(){
     const wrap = qs("#results"); if(!wrap) return;
     qs("#count").textContent = list.length;
     wrap.innerHTML = list.map(p => `
-      <div class="card pad">
-        <div class="flex-between">
+      <div class="card pad prop-card" data-prop="${p.id}">
+        <div class="flex-between prop-head">
           <div>
             <div class="kbd small">${p.id.slice(0,8)}</div>
             <div class="row" style="margin-top:6px">
-              <strong>${p.type}</strong> · <span>${p.location}</span>
+              <strong>${p.type} in ${p.location}</strong>
             </div>
-            <div class="small">${money(p.pricePerNight)}/night · sleeps ${p.guestCapacity}</div>
+            <div class="small">${money(p.pricePerNight)}/night · ${p.guestCapacity} guests</div>
             <div class="pills" style="margin-top:8px">${p.tags.map(t=>`<span class="pill">${t}</span>`).join("")}</div>
           </div>
           <div><button class="btn" data-book="${p.id}">Book</button></div>
         </div>
+
+        <div class="hidden featuresbox" id="feat-${p.id}" style="margin-top:10px">
+          <div class="small" style="margin-bottom:6px;color:#334155">Features</div>
+          <ul class="features-list">${p.features.map(f=>`<li>${f}</li>`).join("")}</ul>
+        </div>
+
         <div class="hidden bookbox" id="book-${p.id}" style="margin-top:10px">
           <div class="row">
             <div class="field"><label>Start date</label><input type="date" id="start-${p.id}"></div>
@@ -233,6 +249,16 @@ function initSearch(){
         </div>
       </div>
     `).join("");
+
+    // expand/collapse features when the card body is clicked
+    qsa(".prop-card").forEach(card=>{
+      card.addEventListener("click",(e)=>{
+        // ignore clicks on buttons/inputs so Book flow still works
+        if(e.target.closest("button, input, select, .bookbox")) return;
+        const id = card.getAttribute("data-prop");
+        qs("#feat-"+id)?.classList.toggle("hidden");
+      });
+    });
 
 
     // filter logic
