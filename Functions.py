@@ -530,9 +530,6 @@ def create_booking(user_dict, property_dict,
     users = load_data_from_json(users_file_path)
     properties = load_data_from_json(properties_file_path)
 
-    # Debugging: Print properties data
-    print("Properties data loaded:", properties)
-
     # Debugging: Print properties data with index
     for idx, p in enumerate(properties):
         if 'property_id' not in p:
