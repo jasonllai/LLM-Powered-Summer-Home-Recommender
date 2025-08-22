@@ -460,64 +460,147 @@ def _find_property(property_id):
     return None
 
 
-def create_booking_history(user_id, current_list, property_index, start_date, end_date, users_file_path="data/Users.json"):
-    print(f"\n=== Booking FOR USER {user_id} ===")
+# def create_booking_history(user_id, current_list, property_index, start_date, end_date, users_file_path="data/Users.json"):
+#     print(f"\n=== Booking FOR USER {user_id} ===")
     
-    # Load users data from JSON
-    users_data = load_data_from_json(users_file_path)
+#     # Load users data from JSON
+#     users_data = load_data_from_json(users_file_path)
     
-    # Find the user by user_id
-    user = next((u for u in users_data if u['user_id'] == user_id), None)
+#     # Find the user by user_id
+#     user = next((u for u in users_data if u['user_id'] == user_id), None)
     
+#     if not user:
+#         print(f"No user found with ID {user_id}")
+#         return None
+
+#     # Convert properties_list to DataFrame
+#     properties_df = pd.DataFrame(current_list)
+
+#     # Debugging: Print DataFrame columns and head
+#     print("DataFrame Columns:", properties_df.columns)
+#     print("DataFrame Head:")
+#     print(properties_df.head())
+
+#     # Check if the property index is valid
+#     if 0 <= property_index < len(properties_df):
+#         prop = properties_df.iloc[property_index]
+#     else:
+#         print(f"No property found at index {property_index}")
+#         return None
+
+#     # Validate the start and end dates
+#     if not validate_date(start_date):
+#         print("Invalid start date format. Use YYYY-MM-DD")
+#         return None
+
+#     if not validate_date(end_date):
+#         print("Invalid end date format. Use YYYY-MM-DD")
+#         return None
+
+#     if datetime.datetime.strptime(end_date, "%Y-%m-%d") <= datetime.datetime.strptime(start_date, "%Y-%m-%d"):
+#         print("End date must be after start date")
+#         return None
+
+#     # Append the booking to the user's booking history
+#     if 'booking_history' not in user:
+#         user['booking_history'] = []
+    
+#     user['booking_history'].append({
+#         "property_id": prop['property_id'],
+#         "start_date": start_date,
+#         "end_date": end_date
+#     })
+
+#     # Save the updated users data back to JSON
+#     save_data_to_json(users_file_path, users_data)
+
+#     print("Booking created successfully!")
+#     print("Current bookings:", user['booking_history'])
+
+
+# Book a property for a user if dates are available.
+# Updates user's booking history and property's unavailable dates.
+def create_booking(user_dict, property_dict,
+                   start_date, end_date,
+                   users_file_path="data/Users.json",
+                   properties_file_path="data/Properties.json"):
+
+    user_id = user_dict.get("user_id")
+    property_id = property_dict.get("property_id")
+    users = load_data_from_json(users_file_path)
+    properties = load_data_from_json(properties_file_path)
+
+    # Debugging: Print properties data
+    print("Properties data loaded:", properties)
+
+    # Debugging: Print properties data with index
+    for idx, p in enumerate(properties):
+        if 'property_id' not in p:
+            print(f"Missing 'property_id' in property at index {idx}: {p}")
+        else:
+            print(f"Property at index {idx} has property_id: {p['property_id']}")
+
+    user = next((u for u in users if u['user_id'] == user_id), None)
+    prop = next((p for p in properties if p['property_id'] == property_id), None)
+
     if not user:
         print(f"No user found with ID {user_id}")
-        return None
+        return
+    if not prop:
+        print(f"No property found with ID {property_id}")
+        return
 
-    # Convert properties_list to DataFrame
-    properties_df = pd.DataFrame(current_list)
+    try:
+        date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d").tolist()
+    except Exception as e:
+        print(f"Invalid date input: {e}")
+        return
 
-    # Debugging: Print DataFrame columns and head
-    print("DataFrame Columns:", properties_df.columns)
-    print("DataFrame Head:")
-    print(properties_df.head())
+    if any(date in prop['unavailable_dates'] for date in date_range):
+        print(f"Property '{prop.get('property_type', property_id)}' is not available for the requested dates.")
+        return
 
-    # Check if the property index is valid
-    if 0 <= property_index < len(properties_df):
-        prop = properties_df.iloc[property_index]
-    else:
-        print(f"No property found at index {property_index}")
-        return None
+    prop['unavailable_dates'].extend(date_range)
 
-    # Validate the start and end dates
-    if not validate_date(start_date):
-        print("Invalid start date format. Use YYYY-MM-DD")
-        return None
-
-    if not validate_date(end_date):
-        print("Invalid end date format. Use YYYY-MM-DD")
-        return None
-
-    if datetime.datetime.strptime(end_date, "%Y-%m-%d") <= datetime.datetime.strptime(start_date, "%Y-%m-%d"):
-        print("End date must be after start date")
-        return None
-
-    # Append the booking to the user's booking history
     if 'booking_history' not in user:
         user['booking_history'] = []
-    
+
     user['booking_history'].append({
-        "property_id": prop['property_id'],
+        "property_id": property_id,
         "start_date": start_date,
         "end_date": end_date
     })
 
-    # Save the updated users data back to JSON
-    save_data_to_json(users_file_path, users_data)
+    for idx, p in enumerate(properties):
+        if p['property_id'] == property_id:
+            properties[idx] = prop
+            break
+    save_data_to_json(properties_file_path, properties)
 
-    print("Booking created successfully!")
-    print("Current bookings:", user['booking_history'])
+    for idx, u in enumerate(users):
+        if u['user_id'] == user_id:
+            users[idx] = user
+            break
+    save_data_to_json(users_file_path, users)
 
+    print(f"Booking successful!")
+    print(f"User '{user.get('name', user_id)}' booked property '{prop.get('property_type', property_id)}' "
+          f"from {start_date} to {end_date}.")
+    print(f"Updated booking history for user: {user['booking_history']}")
 
+user_dict = {
+    "user_id": 1,
+    "name": "Alice",
+    "booking_history": [] 
+}
+property_dict = {
+    "property_id": "b2c3d4e5-f6a7-4890-9123-4567890abcde",
+    "name": "Downtown Apartment",
+    "location": "Toronto",
+    "price_per_night": 120,
+    "unavailable_dates": ["2025-08-21", "2025-08-22"]
+}
+create_booking(user_dict, property_dict, '2021-01-01', '2021-01-02')
 
 ### Old version of create booking history (ask user for input version)
 # def create_booking_history(user, users_obj_list, current_list):
