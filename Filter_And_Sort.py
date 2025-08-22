@@ -1,14 +1,13 @@
 import json
 from datetime import datetime, timedelta
-from Functions import Property
+from rental_management import Property, validate_date, load_data_from_json
 
 # function that filters all properties from json file according to user inputted attributes and returns a subset of the original 
-# properties that meets the filtering criteria as a list of Property objects
+# properties that meets the filtering criteria as a list of Properties in list ofdictionary format
 def filter_properties(group_size=None, min_price=None, max_price=None, features=None, tags=None, prop_type=None, location=None, 
                       start_date=None, end_date=None):
     # reads properties from json as list of dictionaries
-    with open("data/Properties.json", "r") as f:
-        loaded_properties = json.load(f)
+    loaded_properties = load_data_from_json("data/Properties.json")
 
     # checking for properties that are an exact match for the user provided filters
     filtered = loaded_properties
@@ -27,24 +26,36 @@ def filter_properties(group_size=None, min_price=None, max_price=None, features=
     if location is not None:
         filtered = [p for p in filtered if p["location"] == location]
     # filter on the provided dates if the user enters at least one date to filter on
-    if ((start_date or end_date) != None): 
-        if start_date: 
-            start_date = start_date = datetime.strptime(start_date, "%Y-%m-%d").date() # convert user's start date into date type
-        if end_date: 
-            end_date = end_date = datetime.strptime(end_date, "%Y-%m-%d").date() # convert user's end date into date type
-        # if no end date was provided, automatically set end date to be a week after the start date
-        else:
-            end_date = start_date + timedelta(days=7) 
-        # if no start date was provided, automatically set start date to be a week before the end date
-        if end_date and not start_date:
-            start_date = end_date - timedelta(days=7) 
-        # creating a list of all dates between start and end date
-        date_range = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)] 
-        filtered = [p for p in filtered if not set(p["unavailable_dates"]).issubset(date_range)]
+    if start_date or end_date:
+        # Validate provided dates
+        if start_date and not validate_date(start_date):
+            print("Invalid start_date format. Use YYYY-MM-DD.")
+            return []
+        if end_date and not validate_date(end_date):
+            print("Invalid end_date format. Use YYYY-MM-DD.")
+            return []
 
-    # convert properties that meet all filter attributes to a list of Property objects to be returned
-    filtered_props = [Property.from_dict(prop) for prop in filtered]
-    return filtered_props
+        if start_date and end_date:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
+            if end_dt < start_dt:
+                print("end_date must be on or after start_date.")
+                return []
+        elif start_date and not end_date:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_dt = start_dt + timedelta(days=7)
+        else:  # end_date and not start_date
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
+            start_dt = end_dt - timedelta(days=7)
+
+        date_range = [(start_dt + timedelta(days=i)).strftime("%Y-%m-%d")
+                      for i in range((end_dt - start_dt).days + 1)]
+        date_set = set(date_range)
+
+        # Keep properties whose unavailable dates DO NOT intersect requested range
+        filtered = [p for p in filtered if set(p.get("unavailable_dates", [])).isdisjoint(date_set)]
+
+    return filtered
 
 
 # function that sorts a given list of Property objects based on a user inputed sorting attribute and returns the 
