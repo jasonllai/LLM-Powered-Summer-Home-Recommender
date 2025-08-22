@@ -4,7 +4,9 @@ from difflib import get_close_matches, SequenceMatcher
 import json 
 
 class ListingRecommender():
-    def __init__(self, property_lst):
+    def __init__(self):
+        with open('data/Properties.json', 'r') as properties:
+            self.property_list = json.load(properties)
         # Tags correlation table
         tags_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
                     "river", "ocean", "forest", "park", "national park", "state park", 
@@ -40,124 +42,7 @@ class ListingRecommender():
         # Set self-correlation = 1 for every tag
         for t in tags_pool:
             corr_df.loc[t, t] = 1.0
-
-        self.property_lst = property_lst
         self.corr_df = corr_df
-
-        self.calculated_scores = {}
-        for listing in property_lst:
-            self.calculated_scores[listing.get('property_id')] = 0
-
-        self.selected_group_size = 0
-        self.selected_minimum_budget = 0
-        self.selected_maximum_budget = 0
-        self.selected_tag = ""
-        #self.selected_start_date = ""
-        #self.selected_end_date = ""
-
-        self.budget_score = 0
-        self.tag_score = 0
-        self.group_size_score = 0
-        #self.date_score = 0
-
-    def reset_all(self):
-        for listing in self.property_lst:
-            self.calculated_scores[listing.get('property_id')] = 0 
-
-        self.selected_group_size = 0
-        self.selected_minimum_budget = 0
-        self.selected_maximum_budget = 0
-        self.selected_tag = ""
-        #self.selected_start_date = ""
-        #self.selected_end_date = ""
-
-    def reset_selection(self):
-        self.selected_group_size = 0
-        self.selected_minimum_budget = 0
-        self.selected_maximum_budget = 0
-        self.selected_tag = ""
-        #self.selected_start_date = ""
-        #self.selected_end_date = ""
-    
-    def reset_scores(self):
-        for listing in self.property_lst:
-            self.calculated_scores[listing.property_id] = 0 
-    
-    def prompt_tag(self):
-        while True:
-            self.selected_tag = input("What are you searching for: ").strip().lower()
-            if not self.selected_tag:
-                if self.selected_tag or len(self.selected_tag) == 0:
-                    print("Please enter at least one tag.")
-                    continue
-            break
-
-    def prompt_group_size(self):
-        while True:
-            try:
-                self.selected_group_size = int(input("Group Size: "))
-                if self.selected_group_size > 0: break
-                print("Must be positive number")
-            except ValueError:
-                print("Please enter a whole number")
-    
-    def prompt_budget(self):
-        while True:
-            try:
-                self.selected_minimum_budget = float(input("Minimum Budget ($) - whole number only: "))
-                if self.selected_minimum_budget != int(self.selected_minimum_budget):
-                    print("Please enter a whole number (no decimals)")
-                    continue
-                self.selected_minimum_budget = int(self.selected_minimum_budget)
-                if self.selected_minimum_budget <= 0:
-                    print("Minimum budget must be positive")
-                    continue
-                break
-            except ValueError:
-                print("Please enter a whole number")
-    
-        while True:
-            try:
-                self.selected_maximum_budget = float(input("Maximum Budget ($) - whole number only: "))
-                if self.selected_maximum_budget != int(self.selected_maximum_budget):
-                    print("Please enter a whole number (no decimals)")
-                    continue
-                self.selected_maximum_budget = int(self.selected_maximum_budget)
-                if self.selected_maximum_budget <= 0:
-                    print("Maximum budget must be positive")
-                    continue
-                if self.selected_maximum_budget < self.selected_minimum_budget:
-                    print("Maximum budget must be greater than or equal to minimum budget")
-                    continue
-                break
-            except ValueError:
-                print("Please enter a whole number")
-
-    def prompt_dates(self):
-        print("Enter Start Date of Travel (YYYY-MM-DD format): ")
-    
-        while True:
-            self.selected_start_date = input("Start date: ").strip()
-            if not self.selected_start_date:
-                print("Start date is required")
-                continue
-            if self.validate_date(self.selected_start_date):
-                break
-            else:
-                print("Invalid format. Use YYYY-MM-DD")
-        
-        while True:
-            self.selected_end_date = input("End date (YYYY-MM-DD format): ").strip()
-            if not self.selected_end_date:
-                print("End date is required")
-                continue
-            if self.validate_date(self.selected_end_date):
-                if datetime.strptime(self.selected_end_date, '%Y-%m-%d') <= datetime.strptime(self.selected_start_date, '%Y-%m-%d'):
-                    print("End date must be after start date")
-                    continue
-                break
-            else:
-                print("Invalid format. Use YYYY-MM-DD")
 
     def calculate_tag_score(self, active_user, property_tags):
         # If the user has no preferred tag or the listing has no tags, return score 0
@@ -211,7 +96,7 @@ class ListingRecommender():
 
     def calculate_total_score(self, active_user):
         rows = []
-        for prop in self.property_lst:
+        for prop in self.property_list:
             tag_score = self.calculate_tag_score(active_user, prop.get("tags", []))
 
             capacity = prop.get("guest_capacity", 0)
@@ -227,32 +112,33 @@ class ListingRecommender():
                 "price_per_night": price,
                 "guest_capacity": prop.get("guest_capacity"),
                 "tags": ", ".join(prop.get("tags", [])),
-                "total_score": tag_score + group_size_score + price_score
+                "features": ", ".join(prop.get("features", [])),
+                "total_score": round(tag_score + group_size_score + price_score,2)
         })
         # Sorting by descending order and choose top 20
         recommender_output = sorted(rows, key = lambda x: x['total_score'],reverse = True)[:20]
         return recommender_output
 
 
+
+#Example usage
 with open('data/Users.json', 'r') as users:
     users_list = json.load(users)
 
-with open('data/Properties.json', 'r') as properties:
-    property_list = json.load(properties)
-
-
-'''
 active_user_id = 1
 for user in users_list:
     if user["user_id"] == active_user_id:
         active_user = user
         break
-preferred_tag = active_user["preferred_environment"]
-print(preferred_tag)
-'''
-
-recommender = ListingRecommender(property_list)
+    
+recommender = ListingRecommender()
 property_listing_calculated_scores = recommender.calculate_total_score(active_user)
 print('#' * 50)
-print(property_listing_calculated_scores)
+# print(property_listing_calculated_scores)
 print('#' * 50)
+
+properties_df = pd.DataFrame(property_listing_calculated_scores)
+properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
+properties_df = properties_df.drop(columns=["total_score"])
+properties_df["property_index"] = properties_df.index
+print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])

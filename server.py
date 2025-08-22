@@ -15,12 +15,13 @@ def assistant():
         return ("", 204)
     data = request.get_json(silent=True) or {}
     user_input = (data.get("user_input") or data.get("prompt") or "").strip()
-    history = data.get("messages")  # [{role:"user"|"assistant", content:"..."}]
+    history = data.get("messages")
     try:
         from LLM_functions import generate_suggestions_text
         text = generate_suggestions_text(user_input=user_input, messages=history)
         return jsonify(text=text)
     except Exception as e:
+        import traceback; traceback.print_exc()   # prints full stack
         return jsonify(error=str(e)), 500
 
 if __name__ == "__main__":
