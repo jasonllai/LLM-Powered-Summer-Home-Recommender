@@ -1,5 +1,9 @@
+# Importing libraries
 import uuid
 import pandas as pd
+from collections import UserString
+import json
+import datetime
 
 # Classes
 class Property:
@@ -98,9 +102,6 @@ class Admin:
     
 
 # Functions
-from collections import UserString
-import json
-
 def load_data_from_json(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
@@ -112,7 +113,6 @@ def save_data_to_json(file_path, data):
 def generate_property_id():
     return str(uuid.uuid4())
 
-
 def property_display(file_path="data/Properties.json"):
     properties_data = load_data_from_json(file_path)
 
@@ -122,20 +122,16 @@ def property_display(file_path="data/Properties.json"):
 
     df = pd.DataFrame(properties_data).drop(columns=['property_id'], errors='ignore')
 
-    print("Properties DataFrame:")
+    print("Properties:")
     print(df)
     return df
 
-
-
-import datetime
 def validate_date(date_str):
     try:
         datetime.datetime.strptime(date_str, '%Y-%m-%d')
         return True
     except ValueError:
         return False
-
 
 def view_properties(index, file_path="data/Properties.json"):
     properties_data = load_data_from_json(file_path)
@@ -164,6 +160,7 @@ def add_properties(location, p_type, price_per_night, features, tags, guest_capa
     save_data_to_json("data/Properties.json", properties_data)
     print(f"Property added successfully!")
     return new_property
+
 
 # Old version of add properties (ask user for input version)
 # def add_properties():
@@ -260,6 +257,8 @@ def delete_property(index, file_path="data/Properties.json"):
         save_data_to_json(file_path, updated_properties_data)
     else:
         print(f"No property found at index {index}")
+
+    print(len(df))
 
 
 def update_property(index, number, new_value, file_path="data/Properties.json"):
@@ -518,6 +517,8 @@ def create_booking_history(user_id, current_list, property_index, start_date, en
     print("Booking created successfully!")
     print("Current bookings:", user['booking_history'])
 
+
+
 ### Old version of create booking history (ask user for input version)
 # def create_booking_history(user, users_obj_list, current_list):
 #     print(f"\n=== Booking FOR USER {user.user_id} ===")
@@ -573,10 +574,7 @@ def create_booking_history(user_id, current_list, property_index, start_date, en
 
 
 def delete_booking(user_id, booking_index, users_file_path="data/Users.json"):
-    # Load users data from JSON
     users_data = load_data_from_json(users_file_path)
-    
-    # Find the user by user_id
     user = next((u for u in users_data if u['user_id'] == user_id), None)
     
     if not user:
@@ -587,16 +585,13 @@ def delete_booking(user_id, booking_index, users_file_path="data/Users.json"):
         print("No booking to delete")
         return None
 
-    # Check if the booking index is valid
     if 1 <= booking_index <= len(user['booking_history']):
-        # Delete the booking
         removed = user['booking_history'].pop(booking_index - 1)
         print(f"Booking {booking_index} deleted")
     else:
         print(f"Invalid booking index. Please enter a number between 1 and {len(user['booking_history'])}")
         return None
 
-    # Save the updated users data back to JSON
     save_data_to_json(users_file_path, users_data)
 
 # Old version of delete booking (ask user for input version)
@@ -667,7 +662,7 @@ def create_user_profile(name, password, group_size, preferred_environment, budge
 
     print(f"Profile created successfully! User ID: {user_id}")
     return new_user
-    
+
 
 # Old version of create user profile (ask user for input version)
 # def create_user_profile(file_path="data/Users.json"):
@@ -744,7 +739,6 @@ def create_user_profile(name, password, group_size, preferred_environment, budge
 
 
 def user_display_profile(user):
-    # Convert user attributes to a dictionary
     user_data = {
         "User ID": [user.user_id],
         "Name": [user.name],
@@ -754,14 +748,11 @@ def user_display_profile(user):
         "Budget Range": [user.budget_range]
     }
     
-    # Create a DataFrame from the dictionary
     df = pd.DataFrame(user_data)
     
-    # Display the DataFrame
     print("User Profile:")
     print(df)
 
-    # Display booking history if available
     if user.booking_history:
         print("\nBooking History:")
         booking_df = pd.DataFrame(user.booking_history)
@@ -790,7 +781,6 @@ def delete_profile(user_id):
     print(f"No user found with ID {user_id}")
 
 
-
 def edit_user_profile(user_id, choice, new_value=None, users_file_path="data/Users.json"):
     users_obj_list = [User.from_dict(d) for d in load_data_from_json(users_file_path)]
     user = next((u for u in users_obj_list if u.user_id == user_id), None)
@@ -817,11 +807,9 @@ def edit_user_profile(user_id, choice, new_value=None, users_file_path="data/Use
             print("New password cannot be empty")
 
     elif choice == 3:
-        # Assuming create_booking_history is modified to not require user input
         create_booking_history(user, users_obj_list)
 
     elif choice == 4:
-        # Assuming delete_booking is modified to not require user input
         delete_booking(user, users_obj_list)
 
     elif choice == 5:
@@ -852,20 +840,18 @@ def edit_user_profile(user_id, choice, new_value=None, users_file_path="data/Use
         print("Invalid choice")
         return None
 
-    # Update the user in the list
     for i, u in enumerate(users_obj_list):
         if u.user_id == user.user_id:
             users_obj_list[i] = user
             break
 
-    # Save the updated users list back to JSON
     users_data = [u.to_dict() for u in users_obj_list]
     save_data_to_json(users_file_path, users_data)
 
     print("\nUpdated profile:")
     user_display_profile(user)
 
-edit_user_profile(1, 7, (100, 1000))
+
 
 # Old version of edit user profile (ask user for input version)
 # def edit_user_profile(user_id):

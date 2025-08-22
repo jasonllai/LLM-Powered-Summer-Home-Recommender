@@ -1,8 +1,11 @@
 # LLM-Powered Summer Home Recommender
 
-A Python-based recommendation system for summer home rentals that matches users with properties based on their preferences, budget, and group size.
+A Python-based recommendation system for summer home rentals that matches users with properties based on their travel dates, preferences, budget, and group size, with AI-powered recommendations.
 
 ## 🏠 Features
+features for admin and for user.
+For admin: admin can create property, delete property, and edit property.
+
 
 - **Property Management**: Comprehensive property listings with detailed information including location, type, price, features, and tags
 - **User Profiles**: User management system with preferences, budget constraints, and group size requirements
