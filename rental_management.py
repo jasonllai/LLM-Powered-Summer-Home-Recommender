@@ -345,7 +345,7 @@ def delete_booking(user_id, property_id, start_date, end_date,
     # Validate dates
     if not validate_date(start_date) or not validate_date(end_date):
         print("Invalid date format. Use YYYY-MM-DD.")
-        return
+        return False
     
     # Load data
     users = load_data_from_json(users_file_path)
@@ -355,11 +355,11 @@ def delete_booking(user_id, property_id, start_date, end_date,
     user = next((u for u in users if u.get('user_id') == user_id), None)
     if not user:
         print(f"No user found with ID {user_id}")
-        return
+        return False
     prop = next((p for p in properties if p.get('property_id') == property_id), None)
     if not prop:
         print(f"No property found with ID {property_id}")
-        return
+        return False
 
     # Locate the exact booking
     bookings = user.get('booking_history', [])
@@ -369,7 +369,7 @@ def delete_booking(user_id, property_id, start_date, end_date,
                 and b.get('end_date') == end_date), None)
     if idx is None:
         print("Booking not found for given user/property/dates.")
-        return
+        return False
 
     # Remove the booking from the user
     bookings.pop(idx)
@@ -400,3 +400,4 @@ def delete_booking(user_id, property_id, start_date, end_date,
     save_data_to_json(properties_file_path, properties)
 
     print("Booking deleted successfully.")
+    return True
