@@ -1,13 +1,16 @@
-from numpy import False_
+import json
 import pandas as pd
-from Functions import User, Admin, Property
-from Functions import create_user_profile, edit_user_profile, view_user_profile
-from Functions import users_obj_list, property_obj_list
+
+from rental_management import User, Admin, Property
+from rental_management import load_data_from_json
+from rental_management import validate_user, validate_admin
+from rental_management import create_user_profile, view_user_profile, delete_profile, edit_user_profile, create_booking, delete_booking
+from rental_management import view_users, view_properties, add_properties, delete_property, update_property
+
 from Recommender_Logic import ListingRecommender
 from Filter_And_Sort import filter_properties
-from utils import check_login_validity, validate_booking_input
-from LLM_functions import generate_suggestions
-
+from LLM_functions import generate_properties, generate_suggestions, location_pool
+from utils import get_int_input, get_string_input, get_string_list_input
 
 
 
@@ -30,6 +33,37 @@ def main():
 
     environment_pool = ["beach", "lake", "forest", "mountains", "nightlife", "remote", "glamping", "city", "modern", "historic"]
 
+    location_pool = ["Vancouver", "Toronto", "Montreal", "Calgary", "Edmonton", "Winnipeg", "Halifax", "Victoria", "Quebec City", "Fredericton"]
+
+    type_pool = ["cabin", "apartment", "cottage", "loft", "villa", "tiny house", "studio"]
+
+    feature_pool = ["mountain view", "city skyline view", "lakefront", "riverfront",
+                "oceanfront", "beach access", "balcony or patio", "rooftop terrace",
+                "private hot tub", "sauna", "private pool", "fireplace", "houskeeper service",
+                "BBQ grill", "full kitchen", "chef's kitchen", "EV charger", "free parking",
+                "garage", "air conditioning", "heating", "washer and dryer", "fast wifi",
+                "dedicated workspace", "smart TV with streaming", "game room", "fitness room",
+                "ski-in/ski-out", "wheelchair accessible", "pet-friendly"]
+
+    tag_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
+                "river", "ocean", "forest", "park", "national park", "state park", 
+                "national forest", "state forest", "modern","rustic","historic",
+                "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
+                "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"]
+
+    # with open("Users.json", "r") as f:
+    #     users_data = json.load(f)
+
+    # users_obj_list = [User.from_dict(user_dict) for user_dict in users_data]
+
+    # with open("Properties.json", "r") as f:
+    #     properties_data = json.load(f)
+
+    # properties_obj_list = [Property.from_dict(property_dict) for property_dict in properties_data]
+
+    user_data = load_data_from_json("data/Users.json")
+    admin_data = load_data_from_json("data/Admin.json")
+
 
     while app_status:
         print("Welcome to the Summer Home Recommender App!")
@@ -47,157 +81,237 @@ def main():
                 choice_2 = input("[1]Sign in; [2]Sign up; [3]Exit ")
 
                 if choice_2 == "1":
-                    user_username = input("Please enter your username: ")
-                    user_password = input("Please enter your password: ")
-                    curr_user = check_login_validity(user_username, user_password, users_obj_list)
+                    user_id_input = input("Please enter your user id: ")
+                    password_input = input("Please enter your password: ")
+
+                    if validate_user(user_id_input, password_input):
+                        print("Log in successful!")
+                        curr_user_dict = next((a for a in user_data if a.get("user_id") == user_id_input and a.get("password") == password_input), None)
+                        curr_user = User.from_dict(curr_user_dict)
+                        user_logged_in = True
                     
-                    if curr_user:
-                        user_logged_in = True 
+                    else:
+                        print("User id and password do not match!")
 
                     while user_logged_in:
                         print("How can we help you today?")
                         print("[v] View my profile")
                         print("[u] Update my profile")
-                        print("[s] Search for a property")
+                        print("[s] Search and book a property")
                         print("[b] Check my booking")
+                        print("[d] Delete my profile and exit")
                         print("[e] Exit")
                         choice_3 = input("Please enter the corresponding letter: ")
 
                         if choice_3 == "v":
-                            view_user_profile(curr_user.user_id)
+                            print(f"\n=== VIEWING USER PROFILE ===")
+                            user_profile = view_user_profile(curr_user.user_id)
+                            user_profile_df = pd.DataFrame(user_profile["booking_history"])
+                            user_profile_df["user_id"] = user_profile["user_id"]
+                            user_profile_df["name"] = user_profile["name"]
+                            user_profile_df["password"] = user_profile["password"]
+                            user_profile_df["group_size"] = user_profile["group_size"]
+                            user_profile_df["preferred_environment"] = user_profile["preferred_environment"]
+                            user_profile_df["budget_min"] = user_profile["budget_range"][0]
+                            user_profile_df["budget_max"] = user_profile["budget_range"][1]
+                            print(user_profile_df)
                             
-
                         elif choice_3 == "u":
                              while True:
-                                print(f"\n=== EDITING USIER PROFILE ===")
-                                print("Current profile:")
-                                view_user_profile(curr_user.user_id)
-
+                                print(f"\n=== EDITING USER PROFILE ===")
+                                # print("Current profile:")
+                                # view_user_profile(curr_user.user_id)
+                                new_user_id = curr_user.user_id
                                 new_name = curr_user.name
                                 new_password = curr_user.password
+                                new_booking_history = curr_user.booking_history
                                 new_group_size = curr_user.group_size
                                 new_preferred_environment = curr_user.preferred_environment
                                 new_budget_range = curr_user.budget_range
 
                                 print("\nWhat would you like to edit?")
-                                print("[1] Name")
+                                print("[1] Username")
                                 print("[2] Password")
-                                print("[3] Create Booking")
-                                print("[4] Delete Booking")
-                                print("[5] Group Size")
-                                print("[6] Preferred Environment")
-                                print("[7] Budget Range")
-                                print("[8] Exit")
+                                print("[3] Delete Booking")
+                                print("[4] Group Size")
+                                print("[5] Preferred Environment")
+                                print("[6] Budget Range")
+                                print("[7] Exit")
 
-                                try:
-                                    edit_choice = int(input("Enter your choice (1-8): ").strip())
-                                    if edit_choice < 1 or edit_choice > 8:
-                                        print("Please enter a number between 1 and 8")
-                                        continue
+                                user_edit_choice = input("Enter your choice (1-7): ").strip()
 
-                                except ValueError:
-                                    print("Please enter a number")
-                                    continue
-
-                                if edit_choice == 8:
-                                    print("Edit session completed")
-                                    return curr_user
-
-                                elif edit_choice == 1:
+                                if user_edit_choice == "1":
                                     new_name = input("New name: ").strip()
-                                    edit_user_profile(curr_user.user_id, edit_choice, new_name)
-                                    
-                                elif edit_choice == 2:
+                                    new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
+                                    edit_user_profile(new_user_dict)
+           
+                                elif user_edit_choice == "2":
                                     new_password = input("New password: ").strip()
-                                    edit_user_profile(curr_user.user_id, edit_choice, new_password)
+                                    new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
+                                    edit_user_profile(new_user_dict)
                                     
-                                elif edit_choice == 3:
-                                    edit_user_profile(curr_user.user_id, edit_choice)
+                                elif user_edit_choice == "3": # Delete
+                                    print("Here are your current booking(s): ")
+                                    user_profile = view_user_profile(curr_user.user_id)
+                                    user_booking_df = pd.DataFrame(user_profile["booking_history"])
+                                    print(user_profile_df)
+                                    delete_booking_index = int(input("Please enter the row index of the booking that you want to delete: ").strip())
 
-                                elif edit_choice == 4:
-                                    edit_user_profile(curr_user.user_id, edit_choice)
+                                    delete_prop_id = user_booking_df.loc[delete_booking_index]["property_id"]
+                                    delete_start_date = user_booking_df.loc[delete_booking_index]["start_date"]
+                                    delete_end_date = user_booking_df.loc[delete_booking_index]["end_date"]
 
-                                elif edit_choice == 5:
-                                    new_group_size = input("New group size: ")
-                                    edit_user_profile(curr_user.user_id, edit_choice, new_group_size)
+                                    delete_booking(new_user_id, delete_prop_id, delete_start_date, delete_end_date) 
 
-                                elif edit_choice == 6:
-                                    environment_pool = ["beach", "lake", "forest", "mountains", "nightlife", "remote", "glamping", "city", "modern", "historic"]
-                                    print("Please enter your preferred environment from the list below")
-                                    print("If you would like to check multiple preferred environments, please separate each tags by comma")
+                                elif user_edit_choice == "4":
+                                    new_group_size = int(input("New group size: ").strip())
+                                    new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
+                                    edit_user_profile(new_user_dict)
+
+                                elif user_edit_choice == "5":
+                                    print("Please enter your preferred environment from the list below: ")
                                     print(environment_pool)
-                                    environment_input = input("New preferred environment: ")
-                                    # Split by comma and strip whitespace
-                                    new_preferred_environment = [tag.strip() for tag in environment_input.split(",") if tag.strip()]
-                                    # Optional: validate against available tags
-                                    new_preferred_environment = [tag for tag in new_preferred_environment if tag in environment_pool]
+                                    new_preferred_environment = get_string_input("New preferred environment: ", environment_pool)
+                                    new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
+                                    edit_user_profile(new_user_dict)
 
-                                    edit_user_profile(curr_user.user_id, edit_choice, new_preferred_environment)
+                                elif user_edit_choice == "6":
+                                    while True:
+                                        new_min_budget = get_int_input("New minimum budget: ")
+                                        new_max_budget = get_int_input("New maximum budget: ")
+                                        if new_max_budget >= new_min_budget:
+                                            new_budget_range = [new_min_budget, new_max_budget]
+                                            break
 
-                                elif edit_choice == 7:
-                                    new_min_budget = input("New minimum budget is: ")
-                                    new_max_budget = input("New maximum budget is: ")
-                                    new_budget_range = (new_min_budget, new_max_budget)
-                                    edit_user_profile(curr_user.user_id, edit_choice, new_budget_range)
+                                        else:
+                                            print("Invalid budget range! The maximum budget should be greater than or equal to minimum budget.")
+
+                                        new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
+                                        edit_user_profile(new_user_dict)
+                                            
+                                elif user_edit_choice == "7":
+                                    print("Edit session completed!")
+                                    break
+
+                                else:
+                                    print("Invalid choice!")
+
                                                     
-
                         elif choice_3 == "s":
                             search_status = True
 
                             while search_status:
                                 # Call recommender logic function here
-                                recommender = ListingRecommender(property_obj_list)
-                                property_listing_calculated_scores = recommender.calculate_total_score(curr_user)
-                                properties_df = pd.DataFrame(property_listing_calculated_scores)
-                                properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
-                                properties_df = properties_df.drop(columns=["total_score"])
-                                properties_df["property_index"] = properties_df.index
-                                print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])
+                                recommender = ListingRecommender()
+                                recommended_properties = recommender.calculate_total_score(curr_user)
+                                recommended_properties_df = pd.DataFrame(recommended_properties)
+                                recommended_properties_df["tags"] = recommended_properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
+                                recommended_properties_df = recommended_properties_df.drop(columns=["total_score"])
+                                recommended_properties_df["property_index"] = recommended_properties_df.index
+                                print(recommended_properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])
 
                                 print("You can choose to: ")
                                 print("[1] Filter properties")
                                 print("[2] Ask our AI assistant")
-                                print("[3] Go back to home page")
+                                print("[3] Make a booking")
+                                print("[4] Go back to home page")
                                 choice_4 = input("Please select: ")
 
                                 if choice_4 == "1":
                                     filter_status = True
 
+                                    filter_group_size = None
+                                    filter_min_price = None
+                                    filter_max_price = None
+                                    filter_features = None
+                                    filter_tags = None
+                                    filter_type = None
+                                    filter_location = None
+                                    filter_start_date = None
+                                    filter_end_date = None
+
                                     while filter_status:
-                                        # Call filter function
-                                        properties_df.to_json("data/properties.json", orient="records", indent=4)
+                                        print("\nPlease select the attribute you want to filter on and enter your preferences")
+                                        print("[1] Group size")
+                                        print("[2] Minimum price per night")
+                                        print("[3] Maximum price per night")
+                                        print("[4] Features")
+                                        print("[5] Tags")
+                                        print("[6] Property type")
+                                        print("[7] Location")
+                                        print("[8] Start date")
+                                        print("[9] End date")
+                                        print("[f] Filter properties based on the preferences input")
+                                        print("[b] Go back to the previous page")
 
+                                        filter_choice = input("Enter your choice: ").strip()
 
-                                        print("Please enter your preferences: ")
-                                        print("...")  # Display the properties from filter function
-                                        # Store the returned data frame from filter function: df = ...
-                                        # Add index to the data frame: df["indexes"] = df.index + 1
-                                        print("Have you find an ideal place to stay?")
-                                        print("[b] Make a booking")
-                                        print("[r] Return to the previous page")
-                                        choice_5 = input()
+                                        if filter_choice == "1":
+                                            filter_group_size = get_int_input("Please enter the group size you want to filter on: ")
+                                            
+                                        elif filter_choice == "2":
+                                            filter_min_price = get_int_input("Please enter the min price you want to filter on: ")
 
-                                        if choice_5 == "b":
-                                            book_index = input("Please enter the index of the property you want to book: ")
-                                            is_valid, row_index = validate_booking_input(book_index, properties_df, id_column="indexes")
+                                        elif filter_choice == "3":
+                                            filter_max_price = get_int_input("Please enter the max price you want to filter on: ")
 
-                                            if is_valid:
-                                                book_prop_id = properties_df.loc[row_index, "property_id"]
-                                                # book_property(book_prop_id); Need to implement a booking function
-                                                print("Make a booking")
-                                                print("Booking successful!")
-                                                direct_search_status = False
-                                                search_status = False
+                                        elif filter_choice == "4":
+                                            filter_features = get_string_list_input("Please enter the features you want to filter on; If you have multiple features, please separate by comma: ")
+                                            if not filter_features:
+                                             filter_features = None
 
-                                            else:
-                                                print("Invalid id!")
+                                        elif filter_choice == "5":
+                                            filter_tags = get_string_list_input("Please enter the tags you want to filter on; If you have multiple tags, please separate by comma: ")
+                                            if not filter_tags:
+                                                filter_tags = None
 
+                                        elif filter_choice == "6":
+                                            filter_type = get_string_input("Please enter the property type you want to filter on: ", type_pool)
 
-                                        elif choice_5 == "r":
+                                        elif filter_choice == "7":
+                                            filter_location = get_string_input("Please enter the location you want to filter on: ", location_pool)
+
+                                        elif filter_choice == "8":
+                                            filter_start_date = input("Please enter the start date (yyyy-mm-dd): ")
+
+                                        elif filter_choice == "9":
+                                            filter_end_date = input("Please enter the end date (yyyy-mm-dd): ")
+
+                                        elif filter_choice == "f":
+                                            filtered_properties = filter_properties(filter_group_size, filter_min_price, filter_max_price, filter_features, filter_tags, filter_type, filter_location, filter_start_date, filter_end_date)
+                                            filtered_properties_df = pd.DataFrame(filtered_properties)
+                                            print(filtered_properties_df.drop(columns = "property_id"))
+                                            booking_status = True
+
+                                            while booking_status:
+                                                print("\nHave you find an ideal property?")
+                                                print("[b] Make a booking")
+                                                print("[r] Return to the previous page")
+                                                choice_5 = input("Please select an option: ").strip()
+
+                                                if choice_5 == "b":
+                                                    booking_index = get_int_input("Please enter the index of the property you want to book: ")
+                                                    booking_user_id = curr_user.user_id
+                                                    booking_prop_id = filtered_properties_df.loc[booking_index]["property_id"]
+                                                    booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
+                                                    booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
+                                                    create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date)
+                                                    booking_status = False
+
+                                                elif choice_5 == "r":
+                                                    booking_status = False
+
+                                        elif filter_choice == "b":
                                             filter_status = False
 
                                         else:
                                             print("Invalid choice!")
+                                        
+                                        # filter_features = [feature.strip() for feature in filter_features.split(",") if feature.strip()]
+                                        # filter_features = [feature for feature in filter_features if feature in feature_pool]
+
+                                        # filter_tags = [tag.strip() for tag in filter_tags.split(",") if tag.strip()]
+                                        # filter_tags = [tag for tag in filter_tags if tag in tag_pool]
 
 
                                 elif choice_4 == "2":
@@ -207,15 +321,44 @@ def main():
                                         generate_suggestions()
                                         ai_consultant_status = False
 
+
                                 elif choice_4 == "3":
+                                    booking_status = True
+
+                                    while booking_status:
+                                        booking_index = get_int_input("Please enter the index of the property you want to book: ")
+                                        booking_user_id = curr_user.user_id
+                                        booking_prop_id = recommended_properties_df.loc[booking_index]["property_id"]
+                                        booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
+                                        booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
+                                        create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date)
+                                        booking_status = False
+
+
+                                elif choice_4 == "4":
                                     search_status = False
+
 
                                 else:
                                     print("Invalid choice!")
+
                         
                         elif choice_3 == "b":
                             # Need to print current booking list
-                            print("Here are your current booking: ")
+                            booking = view_user_profile(curr_user.user_id)
+                            print(booking["booking_history"])
+
+                        elif choice_3 == "d":
+                            print("Are you sure you want to delete your current user profile?")
+                            delete_profile_choice = input("[y] Yes; [n] No")
+                            
+                            if delete_profile_choice == "y":
+                                print("User profile deleted. See you next time!")
+                                delete_profile(curr_user.user_id)
+                                user_logged_in = False
+
+                            elif delete_profile_choice == "n":
+                                continue
 
                         elif choice_3 == "e":
                             print("Log out successfully!")
@@ -229,25 +372,29 @@ def main():
                 elif choice_2 == "2":
                     # create_user_profile()
                     print("\n=== CREATE NEW PROFILE ===")
-                    new_user_name = input("Enter your name: ")
-                    new_user_password = input("Enter your password: ")
-                    new_user_group_size = input("Enter your group size: ")
+                    new_user_id = input("Enter your user id: ").strip()
+                    new_user_name = input("Enter your username: ").strip()
+                    new_user_password = input("Enter your password: ").strip()
+                    new_user_group_size = get_int_input("Enter your group size: ")
 
                     print("Please enter your preferred environment from the list below")
-                    print("If you would like to check multiple preferred environments, please separate each tags by comma")
                     print(environment_pool)
-                    new_environment_input = input("New preferred environment: ")
-                    # Split by comma and strip whitespace
-                    new_user_preferred_environment = [tag.strip() for tag in new_environment_input.split(",") if tag.strip()]
-                    # Optional: validate against available tags
-                    new_user_preferred_environment = [tag for tag in new_user_preferred_environment if tag in environment_pool]
+                    new_user_preferred_environment = get_string_input("Enter your preferred environment: ", environment_pool)
 
-                    new_user_min_budget = int(input("Enter your minimum budget: "))
-                    new_user_max_budget = int(input("Enter your maximum budget: "))
-                    new_user_budget_range = (new_user_min_budget, new_user_max_budget)
+                    while True:
+                        new_user_min_budget = get_int_input("Enter your minimum budget: ")
+                        new_user_max_budget = get_int_input("Enter your maximum budget: ")
+                        
+                        if new_user_max_budget >= new_user_min_budget:
+                            new_user_budget_range = [new_user_min_budget, new_user_max_budget]
+                            break
+
+                        else:
+                            print("Invalid budget range! The maximum budget should be greater than or equal to minimum budget.")
 
                     create_user_profile(new_user_name, new_user_password, new_user_group_size, new_user_preferred_environment, new_user_budget_range)
                     
+
                 elif choice_2 == "3":
                     print("Thanks for using!")
                     is_user = False
@@ -268,7 +415,7 @@ def main():
                 if choice_6 == "1":
                     admin_username = input("Please enter your username: ")
                     admin_password = input("Please enter your password: ")
-                    admin_logged_in = check_login_validity(admin_username, admin_password, users_obj_list)
+                    admin_logged_in = validate_admin(admin_username, admin_password)
 
                     while admin_logged_in:
                         print("Welcome Administrator! Please select from the following options: ")
@@ -283,15 +430,22 @@ def main():
 
                         if choice_7 == "u":
                             print("Here are the registered users in our app: ")
-                            # print users_list
+                            # view_users()
 
                         elif choice_7 == "p":
                             print("Here are the properties listed in our app: ")
-                            # print properties_list
+                            # view_properties()
 
                         elif choice_7 == "a":
-                            print("Addding a new property: ")
-                            # Call add_properties()
+                            print("\n===Adding A New Property ===")
+                            prop_location = get_string_input("Location: ", location_pool)
+                            prop_type = get_string_input("Property type: ", type_pool)
+                            prop_price = get_int_input("Price per night ($): ")
+                            prop_features = get_string_list_input("Features (please separate features by comma): ", feature_pool)
+                            prop_tags = get_string_list_input("Tags (please separate tags by comma): ", tag_pool)
+                            prop_guest_capacity = get_int_input("Guest capacity: ")
+
+                            # add_property(prop_location, prop_type, prop_price, prop_features, prop_tags, prop_guest_capacity)
 
                         elif choice_7 == "e":
                             property_id = input("Enter the property id you want to update: ")
