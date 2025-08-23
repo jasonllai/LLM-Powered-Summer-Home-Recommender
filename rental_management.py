@@ -133,6 +133,14 @@ def view_properties(file_path="data/Properties.json"):
     return properties_data
 
 
+# return all users in the json file
+def view_users(file_path="data/Users.json"):
+    users_data = load_data_from_json(file_path)
+    if not users_data:
+        print("No users found in the JSON file.")
+        return None
+    return users_data
+
 # takes new property's location, type, price, features, tags, guest capacity, and add to the json file
 def add_properties(location, p_type, price_per_night, features, tags, guest_capacity):
     property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
