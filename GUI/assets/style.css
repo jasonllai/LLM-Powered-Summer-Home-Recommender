@@ -164,3 +164,88 @@ footer{padding:32px 0;color:#64748b}
   .booking-item{ flex-direction:column; gap:6px }
   .booking-item .right{ margin-top:2px }
 }
+
+/* Admin props card buttons stacked */
+.card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+
+/* Multi-select dropdown used in admin editor */
+.multi { position: relative; }
+.multi .menu { position: absolute; z-index: 20; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:8px; margin-top:6px; max-height:220px; overflow:auto; }
+.multi .option { display:flex; align-items:center; gap:8px; padding:4px 6px; }
+
+
+/* Admin props: vertical buttons */
+.card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+
+/* Multi-select dropdown (single-column list) */
+.multi { position: relative; }
+.multi .menu { position:absolute; z-index:20; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:8px; margin-top:6px; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+.multi .menu.list { display:block; width:380px; max-height:320px; overflow:auto; }
+.multi .menu.list .option { display:flex; align-items:flex-start; justify-content:flex-start; gap:10px; padding:6px 8px; border-radius:6px; }
+.multi .menu.list .option input { flex:0 0 auto; margin:2px 8px 0 0; }
+.multi .menu.list .option span { white-space:normal; word-break:break-word; line-height:1.25; }
+/* Force admin multiselects into a single-column, wrapped list */
+.multi .menu.list{
+  width: 460px !important;
+  max-height: 340px !important;
+  overflow: auto;
+}
+
+.multi .menu.list .option{
+  display: grid !important;
+  grid-template-columns: 18px 1fr !important;  /* checkbox | text */
+  align-items: start !important;
+  justify-content: start !important;           /* override space-between */
+  gap: 10px !important;
+  padding: 8px 10px;
+  width: 100% !important;
+}
+
+.multi .menu.list .option input{
+  margin-top: 2px !important;
+}
+
+.multi .menu.list .option span{
+  white-space: normal !important;
+  word-break: break-word !important;
+  line-height: 1.25 !important;
+}
+
+/* Admin property editor – force single‑column multiselect */
+.multi .menu.list{
+  position: absolute;              /* ensure it anchors to the button */
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  width: 460px !important;         /* override the base .menu { width:260px } */
+  max-height: 340px !important;    /* taller, scrolls if long */
+  overflow: auto !important;
+  padding: 8px 10px;
+}
+
+.multi .menu.list .option{
+  display: grid !important;        /* override base flex */
+  grid-template-columns: 18px 1fr !important;  /* checkbox | text */
+  align-items: start !important;
+  justify-content: flex-start !important;      /* beats 'space-between' in base rule */
+  gap: 10px !important;
+  padding: 8px 6px;
+  width: 100%;
+}
+
+.multi .menu.list .option input{
+  margin: 2px 8px 0 0 !important;  /* aligns checkbox with first text line */
+}
+
+.multi .menu.list .option span{
+  white-space: normal !important;
+  word-break: break-word;
+  line-height: 1.25;
+}
+
+/* Buttons on property cards stacked top/bottom on the right */
+.card .buttons{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+
+@media (max-width: 640px){
+  .multi .menu.list{ width: 92vw !important; left: 0; right: auto; }
+}

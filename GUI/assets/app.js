@@ -40,65 +40,92 @@ function initLogin(isAdmin=false){
     e.preventDefault();
     const userid = qs("[name=userid]").value.trim();
     const password = qs("[name=password]").value;
-    if(!userid || !password) return;
-  
+
+    // per-field required prompts (only present on admin page)
+    const errId = qs("#err-admin-id");
+    const errPw = qs("#err-admin-pass");
+    errId?.classList.add("hidden"); errPw?.classList.add("hidden"); err?.classList.add("hidden");
+
+    if(isAdmin){
+      if(!userid){ if(errId){ errId.textContent = "Admin ID is required."; errId.classList.remove("hidden"); } return; }
+      if(!password){ if(errPw){ errPw.textContent = "Password is required."; errPw.classList.remove("hidden"); } return; }
+    }else{
+      if(!userid || !password) return;
+    }
+
     if(!USE_LOCAL){
       try{
-        const r = await fetch(`${API_BASE}/login`, {
+        const endpoint = isAdmin ? "/admin/login" : "/login";
+        const r = await fetch(`${API_BASE}${endpoint}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: userid, password })
         });
         if(!r.ok){
-          err.textContent = "User ID or password is incorrect, please try again.";
+          err.textContent = isAdmin ? "Admin ID or password is incorrect, please try again." : "User ID or password is incorrect, please try again.";
           err.classList.remove("hidden");
           return;
         }
-        sessionStorage.setItem("userId", userid);
-        location.href = `dashboard.html?user=${encodeURIComponent(userid)}`;
+        sessionStorage.setItem(isAdmin ? "adminId" : "userId", userid);
+        location.href = isAdmin ? `admin.html?admin=${encodeURIComponent(userid)}` : `dashboard.html?user=${encodeURIComponent(userid)}`;
       }catch{
         err.textContent = "Unable to log in. Please try again.";
         err.classList.remove("hidden");
       }
       return;
     }
-  
-    // LOCAL MODE ONLY (keep this; remove any redirect before checks)
-    const ok = DB.users.some(u=>u.id===userid && u.password===password);
-    if(!ok){
-      err.textContent="User ID or password is incorrect, please try again.";
-      err.classList.remove("hidden");
-      return;
-    }
-    DB.session.userId = userid; saveDb(DB); location.href="dashboard.html";
   });
 }
 
 // --- Register Page ---
 function initRegister(){
-  const form = qs("#register-form"); const idErr = qs("#id-error");
+  const form = qs("#register-form");
+  const errUser = qs("#err-userid");
+  const errName = qs("#err-name");
+  const errPass = qs("#err-password");
+  const errBmin = qs("#err-bmin");
+  const errBmax = qs("#err-bmax");
+  const errG    = qs("#err-gsize");
+
+  function hide(el){ el?.classList.add("hidden"); }
+  function show(el,msg){ if(!el) return; el.textContent = msg; el.classList.remove("hidden"); }
+  function clearErrs(){ [errUser,errName,errPass,errBmin,errBmax,errG].forEach(hide); }
+
   form?.addEventListener("submit", async (e)=>{
     e.preventDefault();
+    clearErrs();
+
     const userid = qs("[name=userid]")?.value.trim();
     const name = qs("[name=name]")?.value.trim();
     const password = qs("[name=password]")?.value;
     const preferredEnv = qs("#reg-preferred-env")?.value;
-    const budgetMin = parseInt(qs("#reg-budget-min")?.value, 10);
-    const budgetMax = parseInt(qs("#reg-budget-max")?.value, 10);
-    const groupSize = parseInt(qs("#reg-group-size")?.value, 10);
+    const bminStr = qs("#reg-budget-min")?.value;
+    const bmaxStr = qs("#reg-budget-max")?.value;
+    const gsizeStr = qs("#reg-group-size")?.value;
 
-    if(!userid || !name || !password){ idErr.textContent="Please fill all required fields."; idErr.classList.remove("hidden"); return; }
+    if(!userid){ show(errUser,"Username is required."); return; }
+    if(!name){ show(errName,"Name is required."); return; }
+    if(!password){ show(errPass,"Password is required."); return; }
+    if(!bminStr){ show(errBmin,"Budget min is required."); return; }
+    if(!bmaxStr){ show(errBmax,"Budget max is required."); return; }
+    if(!gsizeStr){ show(errG,"Group size is required."); return; }
+
+    const budgetMin = parseInt(bminStr,10);
+    const budgetMax = parseInt(bmaxStr,10);
+    const groupSize = parseInt(gsizeStr,10);
+
     if(!Number.isInteger(groupSize) || groupSize < 1 || groupSize > 10){
-      idErr.textContent="Group size must be an integer between 1 and 10.";
-      idErr.classList.remove("hidden"); return;
+      show(errG,"Group size must be an integer between 1 and 10."); return;
     }
-    if(!Number.isInteger(budgetMin) || !Number.isInteger(budgetMax) || budgetMin <= 0 || budgetMax < budgetMin){
-      idErr.textContent="Budget must be integers; min > 0 and max >= min.";
-      idErr.classList.remove("hidden"); return;
+    if(!Number.isInteger(budgetMin)){ show(errBmin,"Budget min must be an integer > 0."); return; }
+    if(!Number.isInteger(budgetMax)){ show(errBmax,"Budget max must be an integer >= min."); return; }
+    if(budgetMin <= 0 || budgetMax < budgetMin){
+      if(budgetMin <= 0) show(errBmin,"Min must be > 0.");
+      if(budgetMax < budgetMin) show(errBmax,"Max must be >= Min.");
+      return;
     }
 
     if(!USE_LOCAL){
-      idErr.classList.add("hidden");
       try{
         const r = await fetch(`${API_BASE}/register`, {
           method: "POST",
@@ -111,28 +138,18 @@ function initRegister(){
         });
         if(!r.ok){
           const data = await r.json().catch(()=> ({}));
-          idErr.textContent = data?.error || "Failed to sign up.";
-          idErr.classList.remove("hidden");
+          const msg = data?.error || "Failed to sign up.";
+          if(r.status === 409) show(errUser, msg); else toast(msg, false);
           return;
         }
         sessionStorage.setItem("userId", userid);
         location.href = `dashboard.html?user=${encodeURIComponent(userid)}`;
       }catch(err){
         console.error(err);
-        idErr.textContent = "Failed to sign up. Please try again.";
-        idErr.classList.remove("hidden");
+        toast("Failed to sign up. Please try again.", false);
       }
       return;
     }
-
-    // Local mock mode (optional – keep or remove)
-    if(DB.users.some(u=>u.id===userid)){ idErr.textContent="This username has been used."; idErr.classList.remove("hidden"); return; }
-    DB.users.push({
-      id: userid, name, password,
-      bookingHistory: [], groupSize, preferredEnv,
-      budgetRange: [budgetMin, budgetMax]
-    });
-    DB.session.userId = userid; saveDb(DB); location.href="dashboard.html";
   });
 }
 
@@ -743,55 +760,153 @@ function initAdmin(){
   }));
   qs("[data-tab='users']")?.click();
 
-  // Users
-  function renderUsers(){
+  // Users (backend mode)
+  async function fetchUsers(){
+    try{
+      const r = await fetch(`${API_BASE}/admin/users`, { method: "POST", headers: { "Content-Type": "application/json" }});
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      renderUsers(Array.isArray(data.users) ? data.users : []);
+    }catch(err){
+      console.error(err);
+      qs("#users-body").innerHTML = `<tr><td colspan="4" class="small">Failed to load users.</td></tr>`;
+    }
+  }
+
+  function renderUsers(list){
     const tb = qs("#users-body");
-    tb.innerHTML = DB.users.map(u => `
-      <tr>
+    tb.innerHTML = list.map(u => `
+      <tr data-u="${u.id}">
         <td class="kbd">${u.id}</td>
-        <td>${u.name}</td>
+        <td>${u.name || ""}</td>
         <td>${(u.bookingHistory||[]).length}</td>
-        <td><span class="pill">${u.preferredEnv}</span> <span class="pill">${u.groupSize} guests</span> <span class="pill">$${u.budgetRange?.[0]}–$${u.budgetRange?.[1]}</span></td>
+        <td><span class="pill">${u.preferredEnv || ""}</span>
+            <span class="pill">${u.groupSize || 0} guests</span>
+            ${Array.isArray(u.budgetRange) ? `<span class="pill">$${u.budgetRange[0]}–$${u.budgetRange[1]}</span>` : ""}
+        </td>
       </tr>
     `).join("");
+
+    // click to expand bookings for that user
+    tb.querySelectorAll("tr[data-u]").forEach(tr=>{
+      tr.addEventListener("click", ()=>{
+        const next = tr.nextElementSibling;
+        if(next && next.classList.contains("subrow")){ next.remove(); return; }
+        const id = tr.getAttribute("data-u");
+        const u = list.find(x=>x.id===id) || { bookingHistory: [] };
+        const rows = (u.bookingHistory||[]).map(b => `
+          <div class="booking-item">
+            <div class="left"><div class="name"><strong>${b.propertyName || ""}</strong></div><div class="kbd small">${(b.propertyId||"").slice(0,8)}</div></div>
+            <div class="right small">${b.start} → ${b.end}</div>
+          </div>`).join("") || `<div class="small">No bookings.</div>`;
+        const tr2 = document.createElement("tr");
+        tr2.className = "subrow";
+        tr2.innerHTML = `<td colspan="4"><div style="padding:8px 6px">${rows}</div></td>`;
+        tr.after(tr2);
+      });
+    });
   }
-  renderUsers();
+
+  // default: show users pane and load
+  qs("[data-tab='users']")?.addEventListener("click", fetchUsers);
+  qs("[data-tab='users']")?.click();
+
 
   // Properties
-  function renderProps(){
+    // Properties (backend mode)
+  function optionsHtml(arr, selected){
+    return arr.map(v=>`<option value="${v}" ${v===selected?"selected":""}>${v}</option>`).join("");
+  }
+  function checkListHtml(arr, selected){
+    const sel = new Set(selected||[]);
+    return arr.map(v=>`<label class="option"><input type="checkbox" value="${v}" ${sel.has(v)?"checked":""}><span>${v}</span></label>`).join("");
+  }
+  const LOCATIONS_ADM = ["Vancouver","Toronto","Montreal","Calgary","Edmonton","Winnipeg","Halifax","Victoria","Quebec City","Fredericton"];
+  const TYPES_ADM = ["cabin","apartment","cottage","loft","villa","tiny house","studio"];
+  const FEATURES_ADM = ["mountain view","city skyline view","lakefront","riverfront","oceanfront","beach access","balcony or patio","rooftop terrace","private hot tub","sauna","private pool","fireplace","houskeeper service","BBQ grill","full kitchen","chef's kitchen","EV charger","free parking","garage","air conditioning","heating","washer and dryer","fast wifi","dedicated workspace","smart TV with streaming","game room","fitness room","ski-in/ski-out","wheelchair accessible","pet-friendly"];
+  const TAGS_ADM = ["mountains","remote","adventure","beach","city","lake","river","ocean","forest","park","national park","state park","national forest","state forest","modern","rustic","historic","family-friendly","kid-friendly","pet-friendly","romantic","business-travel","nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"];
+
+  async function fetchProps(){
+    try{
+      const r = await fetch(`${API_BASE}/admin/properties`, { method:"POST", headers:{ "Content-Type":"application/json" }});
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      renderProps(data.properties || []);
+    }catch(e){
+      console.error(e);
+      qs("#props-list").innerHTML = `<div class="small">Failed to load properties.</div>`;
+    }
+  }
+
+  function renderProps(props){
     const list = qs("#props-list");
-    list.innerHTML = DB.properties.map(p => `
+    list.innerHTML = (props||[]).map(p => `
       <div class="card pad">
         <div class="flex-between">
           <div>
             <strong>${p.type}</strong> · ${p.location}
-            <div class="small">${money(p.pricePerNight)}/night · sleeps ${p.guestCapacity}</div>
-            <div class="pills" style="margin-top:6px">${p.tags.map(t=>`<span class="pill">${t}</span>`).join("")}</div>
+                        <div class="small">${money(p.price_per_night)}/night · ${p.guest_capacity} guests</div>
+            <div class="pills" style="margin-top:6px">${(p.tags||[]).map(t=>`<span class="pill">${t}</span>`).join("")}</div>
           </div>
           <div class="buttons">
-            <button class="btn outline" data-edit="${p.id}">Update</button>
-            <button class="btn danger" data-del="${p.id}">Delete</button>
+            <button class="btn outline" data-edit="${p.property_id}">Update</button>
+            <button class="btn danger" data-del="${p.property_id}">Delete</button>
           </div>
         </div>
-        <div class="hidden" id="edit-${p.id}" style="margin-top:10px">
+        <div class="hidden" id="edit-${p.property_id}" style="margin-top:10px">
           <div class="grid grid-2">
-            <div class="field"><label>Location</label><input value="${p.location}" data-k="location"></div>
-            <div class="field"><label>Type</label><input value="${p.type}" data-k="type"></div>
-            <div class="field"><label>Price per night ($)</label><input type="number" value="${p.pricePerNight}" data-k="pricePerNight"></div>
-            <div class="field"><label>Guest capacity</label><input type="number" value="${p.guestCapacity}" data-k="guestCapacity"></div>
-            <div class="field"><label>Features (comma-separated)</label><input value="${p.features.join(", ")}" data-k="features"></div>
-            <div class="field"><label>Tags (comma-separated)</label><input value="${p.tags.join(", ")}" data-k="tags"></div>
-            <div class="field" style="grid-column:1/-1"><label>Unavailable (YYYY-MM-DD..YYYY-MM-DD; ; separated)</label>
-              <input value="${(p.unavailable||[]).map(r=>`${r.start}..${r.end}`).join("; ")}" data-k="unavailable">
+            <div class="field"><label>Location</label>
+              <select data-k="location">${optionsHtml(LOCATIONS_ADM, p.location)}</select>
+              <div class="error hidden" data-err="location"></div>
+            </div>
+            <div class="field"><label>Type</label>
+              <select data-k="type">${optionsHtml(TYPES_ADM, p.type)}</select>
+              <div class="error hidden" data-err="type"></div>
+            </div>
+            <div class="field"><label>Price per night ($)</label>
+              <input type="number" min="1" step="1" value="${p.price_per_night}" data-k="price_per_night">
+              <div class="error hidden" data-err="price_per_night"></div>
+            </div>
+            <div class="field"><label>Guest capacity</label>
+              <input type="number" min="1" max="10" step="1" value="${p.guest_capacity}" data-k="guest_capacity">
+              <div class="error hidden" data-err="guest_capacity"></div>
+            </div>
+            <div class="field" style="grid-column:1/-1"><label>Features</label>
+              <div class="multi" data-k="features">
+                <button class="btn outline sm" id="btn-feat-${p.property_id}" type="button">Any features</button>
+                <div class="menu hidden list" id="dd-feat-${p.property_id}">${checkListHtml(FEATURES_ADM, p.features||[])}</div>
+              </div>
+              <div class="error hidden" data-err="features"></div>
+            </div>
+            <div class="field" style="grid-column:1/-1"><label>Tags</label>
+              <div class="multi" data-k="tags">
+                <button class="btn outline sm" id="btn-tags-${p.property_id}" type="button">Any tags</button>
+                <div class="menu hidden list" id="dd-tags-${p.property_id}">${checkListHtml(TAGS_ADM, p.tags||[])}</div>
+              </div>
+              <div class="error hidden" data-err="tags"></div>
             </div>
           </div>
           <div class="row">
-            <button class="btn" data-save="${p.id}">Save</button>
-            <button class="btn outline" data-cancel="${p.id}">Cancel</button>
+            <button class="btn" data-save="${p.property_id}">Save</button>
+            <button class="btn outline" data-cancel="${p.property_id}">Cancel</button>
           </div>
         </div>
       </div>
     `).join("");
+
+    // init per-card multi-selects
+    (props||[]).forEach(p=>{
+      const btnF = qs(`#btn-feat-${p.property_id}`), ddF = qs(`#dd-feat-${p.property_id}`);
+      const btnT = qs(`#btn-tags-${p.property_id}`), ddT = qs(`#dd-tags-${p.property_id}`);
+      const updF = ()=>{ const sel = Array.from(ddF?.querySelectorAll("input:checked")||[]).length; if(btnF) btnF.textContent = sel ? `${sel} selected` : "Any features"; };
+      const updT = ()=>{ const sel = Array.from(ddT?.querySelectorAll("input:checked")||[]).length; if(btnT) btnT.textContent = sel ? `${sel} selected` : "Any tags"; };
+      btnF?.addEventListener("click", ()=> ddF?.classList.toggle("hidden"));
+      btnT?.addEventListener("click", ()=> ddT?.classList.toggle("hidden"));
+      ddF?.addEventListener("change", updF); ddT?.addEventListener("change", updT);
+      document.addEventListener("click", (e)=>{ if(btnF && ddF && !btnF.contains(e.target) && !ddF.contains(e.target)) ddF.classList.add("hidden"); });
+      document.addEventListener("click", (e)=>{ if(btnT && ddT && !btnT.contains(e.target) && !ddT.contains(e.target)) ddT.classList.add("hidden"); });
+      updF(); updT();
+    });
 
     // Events
     qsa("[data-edit]").forEach(b => b.addEventListener("click", ()=>{
@@ -799,53 +914,158 @@ function initAdmin(){
       qsa("[id^='edit-']").forEach(x=>x.classList.add("hidden"));
       qs("#edit-"+id).classList.toggle("hidden");
     }));
-    qsa("[data-del]").forEach(b => b.addEventListener("click", ()=>{
-      const id=b.getAttribute("data-del");
-      DB.properties = DB.properties.filter(p=>p.id!==id);
-      saveDb(DB); renderProps();
-    }));
+
     qsa("[data-cancel]").forEach(b => b.addEventListener("click", ()=>{
       const id=b.getAttribute("data-cancel"); qs("#edit-"+id).classList.add("hidden");
     }));
-    qsa("[data-save]").forEach(b => b.addEventListener("click", ()=>{
+
+    qsa("[data-del]").forEach(b => b.addEventListener("click", async ()=>{
+      const id=b.getAttribute("data-del");
+      if(!confirm("Delete this property?")) return;
+      try{
+        const r = await fetch(`${API_BASE}/admin/property/delete`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ propertyId: id }) });
+        if(!r.ok) throw new Error(await r.text());
+        toast("Property deleted", true);
+        fetchProps();
+      }catch(e){ console.error(e); toast("Failed to delete", false); }
+    }));
+
+    qsa("[data-save]").forEach(b => b.addEventListener("click", async ()=>{
       const id=b.getAttribute("data-save");
       const box = qs("#edit-"+id);
-      const get = (k)=> box.querySelector(`[data-k='${k}']`).value;
-      const prop = DB.properties.find(p=>p.id===id);
-      prop.location = get("location");
-      prop.type = get("type");
-      prop.pricePerNight = Number(get("pricePerNight"));
-      prop.guestCapacity = Number(get("guestCapacity"));
-      prop.features = get("features").split(",").map(s=>s.trim()).filter(Boolean);
-      prop.tags = get("tags").split(",").map(s=>s.trim()).filter(Boolean);
-      const raw = get("unavailable").trim();
-      prop.unavailable = raw ? raw.split(";").map(seg=>seg.trim()).filter(Boolean).map(seg=>{
-        const [start,end] = seg.split(".."); return {start,end};
-      }) : [];
-      saveDb(DB); renderProps(); toast("Property updated", true);
+      const getVal = (k)=> box.querySelector(`[data-k='${k}']`);
+      const hide = el => el?.classList.add("hidden"); const show = (k,msg)=>{ const el=box.querySelector(`[data-err='${k}']`); if(el){ el.textContent=msg; el.classList.remove("hidden"); } };
+      ["location","type","price_per_night","guest_capacity","features","tags"].forEach(k=>hide(box.querySelector(`[data-err='${k}']`)));
+
+      const location = getVal("location").value;
+      const type = getVal("type").value;
+      const price = parseInt(getVal("price_per_night").value,10);
+      const cap = parseInt(getVal("guest_capacity").value,10);
+      const features = Array.from(getVal("features").querySelectorAll("input:checked")).map(i=>i.value);
+      const tags = Array.from(getVal("tags").querySelectorAll("input:checked")).map(i=>i.value);
+
+      // client validations
+      if(!LOCATIONS_ADM.includes(location)){ show("location","Pick a valid location."); return; }
+      if(!TYPES_ADM.includes(type)){ show("type","Pick a valid type."); return; }
+      if(!Number.isInteger(price) || price<=0){ show("price_per_night","Positive integer required."); return; }
+      if(!Number.isInteger(cap) || cap<1 || cap>10){ show("guest_capacity","Must be 1–10."); return; }
+      if(!features.every(f=>FEATURES_ADM.includes(f))){ show("features","Invalid feature selected."); return; }
+      if(!tags.every(t=>TAGS_ADM.includes(t))){ show("tags","Invalid tag selected."); return; }
+
+      // send to backend
+      const payload = { property_id:id, location, type, price_per_night:price, features, tags, guest_capacity:cap };
+      try{
+        const r = await fetch(`${API_BASE}/admin/property/update`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+        if(!r.ok){ const msg = await r.text().catch(()=> ""); toast(msg || "Failed to save", false); return; }
+        toast("Saved", true);
+        fetchProps();
+      }catch(e){ console.error(e); toast("Failed to save", false); }
     }));
   }
-  renderProps();
 
-  // Add property
-  qs("#ap-create")?.addEventListener("click", ()=>{
-    const get=(id)=>qs("#"+id).value;
-    const p = {
-      id:rnd(),
-      location:get("ap-location"),
-      type:get("ap-type"),
-      pricePerNight:Number(get("ap-price")),
-      features:get("ap-features").split(",").map(s=>s.trim()).filter(Boolean),
-      tags:get("ap-tags").split(",").map(s=>s.trim()).filter(Boolean),
-      guestCapacity:Number(get("ap-capacity")),
-      unavailable:[]
-    };
-    if(!p.location || !p.type){ toast("Location and Type are required", false); return; }
-    DB.properties.unshift(p); saveDb(DB);
-    // reset
-    ["ap-location","ap-type","ap-price","ap-features","ap-tags","ap-capacity"].forEach(id=>qs("#"+id).value = (id in {"ap-price":1,"ap-capacity":1})? "": "");
-    renderProps(); toast("New property created successfully.", true);
-  });
+  // Load properties when the tab is opened and on page load
+  qs("[data-tab='props']")?.addEventListener("click", fetchProps);
+
+  // Add property (backend)
+  (function setupAddForm(){
+    // Replace location/type inputs with selects
+    const locEl = qs("#ap-location");
+    if (locEl && locEl.tagName !== "SELECT"){
+      const sel = document.createElement("select"); sel.id = "ap-location"; sel.innerHTML = `<option value="">Select…</option>` + LOCATIONS_ADM.map(v=>`<option>${v}</option>`).join("");
+      locEl.replaceWith(sel);
+      const err = document.createElement("div"); err.id="ap-location-err"; err.className="error hidden"; sel.parentElement.appendChild(err);
+    }
+    const typEl = qs("#ap-type");
+    if (typEl && typEl.tagName !== "SELECT"){
+      const sel = document.createElement("select"); sel.id = "ap-type"; sel.innerHTML = `<option value="">Select…</option>` + TYPES_ADM.map(v=>`<option>${v}</option>`).join("");
+      typEl.replaceWith(sel);
+      const err = document.createElement("div"); err.id="ap-type-err"; err.className="error hidden"; sel.parentElement.appendChild(err);
+    }
+    // Constrain price/capacity and add error holders
+    const price = qs("#ap-price"); const cap = qs("#ap-capacity");
+    if (price){ price.type="number"; price.min="2"; price.step="1"; price.placeholder="e.g., 150"; price.insertAdjacentHTML("afterend", `<div id="ap-price-err" class="error hidden"></div>`); }
+    if (cap){ cap.type="number"; cap.min="1"; cap.max="10"; cap.step="1"; cap.placeholder="1–10"; cap.insertAdjacentHTML("afterend", `<div id="ap-cap-err" class="error hidden"></div>`); }
+
+    // Replace features/tags inputs with multiselect dropdowns
+    function buildMulti(hostId, btnId, ddId, items, anyLabel){
+      const host = qs(hostId);
+      if (!host) return { get: ()=>[], label:()=>{} };
+      const wrap = document.createElement("div");
+      wrap.className = "multi";
+      wrap.innerHTML = `
+        <button class="btn outline sm" id="${btnId}" type="button">${anyLabel}</button>
+        <div class="menu hidden list" id="${ddId}">
+          ${items.map(v=>`<label class="option"><input type="checkbox" value="${v}"><span>${v}</span></label>`).join("")}
+        </div>
+        <div id="${btnId}-err" class="error hidden"></div>`;
+      host.replaceWith(wrap);
+      const btn = qs("#"+btnId), dd = qs("#"+ddId), err = qs("#"+btnId+"-err");
+      const update = ()=>{ const n = dd.querySelectorAll("input:checked").length; btn.textContent = n ? `${n} selected` : anyLabel; };
+      btn.addEventListener("click", ()=> dd.classList.toggle("hidden"));
+      dd.addEventListener("change", update);
+      document.addEventListener("click", (e)=>{ if(!btn.contains(e.target) && !dd.contains(e.target)) dd.classList.add("hidden"); });
+      update();
+      return {
+        get: ()=> Array.from(dd.querySelectorAll("input:checked")).map(i=>i.value),
+        showErr: (msg)=>{ err.textContent=msg; err.classList.remove("hidden"); },
+        clearErr: ()=> err.classList.add("hidden"),
+      };
+    }
+    const mFeat = buildMulti("#ap-features", "ap-feat-btn", "ap-feat-dd", FEATURES_ADM, "Any features");
+    const mTags = buildMulti("#ap-tags", "ap-tags-btn", "ap-tags-dd", TAGS_ADM, "Any tags");
+
+    // Create click
+    qs("#ap-create")?.addEventListener("click", async ()=>{
+      // clear errors
+      const hide = id => qs(id)?.classList.add("hidden");
+      hide("#ap-location-err"); hide("#ap-type-err"); hide("#ap-price-err"); hide("#ap-cap-err"); mFeat.clearErr(); mTags.clearErr();
+
+      const location = qs("#ap-location")?.value || "";
+      const ptype    = qs("#ap-type")?.value || "";
+      const priceVal = parseInt(qs("#ap-price")?.value || "", 10);
+      const capVal   = parseInt(qs("#ap-capacity")?.value || "", 10);
+      const features = mFeat.get();
+      const tags     = mTags.get();
+
+      let invalid = false;
+      if(!location){ const el=qs("#ap-location-err"); el.textContent="Location is required."; el.classList.remove("hidden"); invalid = true; }
+      if(!ptype){ const el=qs("#ap-type-err"); el.textContent="Type is required."; el.classList.remove("hidden"); invalid = true; }
+      if(!Number.isInteger(priceVal) || priceVal <= 1){ const el=qs("#ap-price-err"); el.textContent="Price must be an integer > 1."; el.classList.remove("hidden"); invalid = true; }
+      if(!Number.isInteger(capVal) || capVal < 1 || capVal > 10){ const el=qs("#ap-cap-err"); el.textContent="Capacity must be 1–10."; el.classList.remove("hidden"); invalid = true; }
+      if(!features.length){ mFeat.showErr("Select at least one feature."); invalid = true; }
+      if(!tags.length){ mTags.showErr("Select at least one tag."); invalid = true; }
+      if(invalid) return;
+
+      try{
+        const r = await fetch(`${API_BASE}/admin/property/create`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({
+            location, type: ptype,
+            price_per_night: priceVal,
+            guest_capacity: capVal,
+            features, tags
+          })
+        });
+        if(!r.ok){
+          const data = await r.json().catch(()=> ({}));
+          const msg = data?.error || "Failed to create property.";
+          toast(msg, false);
+          return;
+        }
+        toast("Successfully create property!", true);
+        // optional: reset minimal fields
+        qs("#ap-price").value = ""; qs("#ap-capacity").value = "";
+        document.querySelectorAll("#ap-feat-dd input:checked").forEach(i=> i.checked=false);
+        document.querySelectorAll("#ap-tags-dd input:checked").forEach(i=> i.checked=false);
+        qs("#ap-feat-btn").textContent = "Any features";
+        qs("#ap-tags-btn").textContent = "Any tags";
+        fetchProps();
+      }catch(e){
+        console.error(e); toast("Failed to create property.", false);
+      }
+    });
+  })();
 
   // Generate properties (simulated LLM)
   function generateProperties(n){

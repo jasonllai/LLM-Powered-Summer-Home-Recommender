@@ -22,10 +22,12 @@
         <div class="field">
           <label>Admin ID</label>
           <input name="userid" autocomplete="username">
+          <div id="err-admin-id" class="error hidden"></div>
         </div>
         <div class="field">
           <label>Password</label>
           <input type="password" name="password" autocomplete="current-password">
+          <div id="err-admin-pass" class="error hidden"></div>
         </div>
         <div id="login-error" class="error hidden">Admin ID or password is incorrect, please try again.</div>
         <div class="row" style="justify-content:flex-end;margin-top:6px">

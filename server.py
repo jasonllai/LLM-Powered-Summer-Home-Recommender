@@ -3,8 +3,9 @@ import json
 import datetime
 from flask import Flask, request, jsonify
 from Recommender_Logic import ListingRecommender
-from rental_management import create_user_profile, view_user_profile, edit_user_profile, create_booking, delete_booking, delete_profile
 from Filter_And_Sort import filter_properties, sort_properties_asjson
+from LLM_functions import location_pool, type_pool, feature_pool, tag_pool
+from rental_management import create_user_profile, view_user_profile, edit_user_profile, create_booking, delete_booking, delete_profile, validate_admin, validate_user, update_property, delete_property, view_properties, add_properties
 
 
 app = Flask(__name__)
@@ -399,6 +400,169 @@ def search():
             "guestCapacity": p.get("guest_capacity"),
         } for p in (results or [])]
         return jsonify(properties=out)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    
+    
+@app.route("/admin/login", methods=["POST", "OPTIONS"])
+def admin_login():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    data = request.get_json(silent=True) or {}
+    admin_id = (data.get("userId") or "").strip()
+    password = data.get("password")
+    if not admin_id or password is None:
+        return jsonify(error="Missing credentials"), 400
+    try:
+        ok = validate_admin(admin_id, password)
+        if not ok:
+            return jsonify(error="Invalid admin credentials"), 401
+        return jsonify(ok=True, admin_id=admin_id)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    
+    
+# server.py
+@app.route("/admin/users", methods=["GET", "POST", "OPTIONS"])
+def admin_users():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        users = view_user_profile.__globals__["load_data_from_json"](os.path.join(os.path.dirname(__file__), "data", "Users.json")) or []
+        with open(os.path.join(os.path.dirname(__file__), "data", "Properties.json"), "r", encoding="utf-8") as f:
+            props = json.load(f)
+        name_by_id = {p.get("property_id"): f"{p.get('type')} in {p.get('location')}" for p in props}
+
+        out = []
+        for u in users:
+            out.append({
+                "id": u.get("user_id"),
+                "name": u.get("name"),
+                "groupSize": u.get("group_size"),
+                "preferredEnv": u.get("preferred_environment"),
+                "budgetRange": u.get("budget_range") or [],
+                "bookingHistory": [
+                    {
+                        "propertyId": b.get("property_id"),
+                        "propertyName": name_by_id.get(b.get("property_id"), "(unknown)"),
+                        "start": b.get("start_date"),
+                        "end": b.get("end_date"),
+                    }
+                    for b in (u.get("booking_history") or [])
+                ]
+            })
+        return jsonify(users=out)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    
+    
+@app.route("/admin/properties", methods=["POST","OPTIONS"])
+def admin_properties():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        props = view_properties(file_path=os.path.join(os.path.dirname(__file__), "data", "Properties.json")) or []
+        return jsonify(properties=props)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+
+@app.route("/admin/property/update", methods=["POST","OPTIONS"])
+def admin_property_update():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    data = request.get_json(silent=True) or {}
+    p = data if isinstance(data, dict) else {}
+    required = ["property_id","location","type","price_per_night","features","tags","guest_capacity"]
+    if not all(k in p for k in required):
+        return jsonify(error="Missing fields"), 400
+
+    # validations
+    if p["location"] not in location_pool: return jsonify(error="Invalid location"), 400
+    if p["type"] not in type_pool: return jsonify(error="Invalid type"), 400
+    try:
+        price = int(p["price_per_night"])
+        if price <= 0: raise ValueError()
+    except Exception:
+        return jsonify(error="price_per_night must be a positive integer"), 400
+    try:
+        cap = int(p["guest_capacity"])
+        if not (1 <= cap <= 10): raise ValueError()
+    except Exception:
+        return jsonify(error="guest_capacity must be 1–10"), 400
+    if not set(p.get("features") or []).issubset(set(feature_pool)):
+        return jsonify(error="features contain invalid values"), 400
+    if not set(p.get("tags") or []).issubset(set(tag_pool)):
+        return jsonify(error="tags contain invalid values"), 400
+
+    # keep unavailable_dates as-is if omitted
+    if "unavailable_dates" not in p:
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "data", "Properties.json"), "r", encoding="utf-8") as f:
+                props = json.load(f)
+            cur = next((x for x in props if x.get("property_id")==p["property_id"]), {})
+            p["unavailable_dates"] = cur.get("unavailable_dates", [])
+        except Exception:
+            p["unavailable_dates"] = []
+
+    try:
+        update_property(p, file_path=os.path.join(os.path.dirname(__file__), "data", "Properties.json"))
+        return jsonify(ok=True)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+
+@app.route("/admin/property/delete", methods=["POST","OPTIONS"])
+def admin_property_delete():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    data = request.get_json(silent=True) or {}
+    pid = (data.get("propertyId") or "").strip()
+    if not pid: return jsonify(error="propertyId required"), 400
+    try:
+        delete_property(pid,
+                        file_path=os.path.join(os.path.dirname(__file__), "data", "Properties.json"),
+                        users_file_path=os.path.join(os.path.dirname(__file__), "data", "Users.json"))
+        return jsonify(ok=True)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    
+    
+# server.py (imports already include pools and add_properties)
+
+@app.route("/admin/property/create", methods=["POST","OPTIONS"])
+def admin_property_create():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    data = request.get_json(silent=True) or {}
+    location = (data.get("location") or "").strip()
+    ptype    = (data.get("type") or "").strip()
+    features = data.get("features") or []
+    tags     = data.get("tags") or []
+    try:
+        price = int(data.get("price_per_night"))
+        cap   = int(data.get("guest_capacity"))
+    except Exception:
+        return jsonify(error="price_per_night and guest_capacity must be integers"), 400
+
+    if not location: return jsonify(error="Location is required"), 400
+    if not ptype:    return jsonify(error="Type is required"), 400
+    if price <= 1:   return jsonify(error="Price per night must be > 1"), 400
+    if not (1 <= cap <= 10): return jsonify(error="Guest capacity must be 1–10"), 400
+    if location not in location_pool: return jsonify(error="Invalid location"), 400
+    if ptype not in type_pool:        return jsonify(error="Invalid type"), 400
+    if not features or not set(features).issubset(set(feature_pool)):
+        return jsonify(error="Invalid or missing features"), 400
+    if not tags or not set(tags).issubset(set(tag_pool)):
+        return jsonify(error="Invalid or missing tags"), 400
+
+    try:
+        add_properties(location, ptype, price, features, tags, cap)
+        return jsonify(ok=True)
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500

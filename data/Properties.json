@@ -2,7 +2,7 @@
     {
         "property_id": "a1b2c3d4-e5f6-4789-9012-34567890abcd",
         "location": "Vancouver",
-        "type": "apartment",
+        "type": "cottage",
         "price_per_night": 150,
         "features": [
             "city skyline view",
@@ -413,46 +413,43 @@
         "unavailable_dates": []
     },
     {
-        "property_id": "d0e1f2a3-b4c5-4678-c901-234567890123",
-        "location": "Fredericton",
-        "type": "cabin",
-        "price_per_night": 90,
-        "features": [
-            "riverfront",
-            "fireplace",
-            "full kitchen",
-            "BBQ grill",
-            "heating",
-            "washer and dryer",
-            "pet-friendly"
-        ],
-        "tags": [
-            "river",
-            "remote",
-            "family-friendly",
-            "pet-friendly",
-            "rustic"
-        ],
-        "guest_capacity": 7,
-        "unavailable_dates": []
-    },
-    {
         "property_id": "edc64003-60c4-4aeb-80ed-3033af218a84",
         "location": "Toronto",
         "type": "apartment",
         "price_per_night": 120,
         "features": [
-            "Wifi",
-            "Parking"
+            "EV charger",
+            "free parking",
+            "fast wifi"
         ],
         "tags": [
-            "City",
-            "Modern"
+            "city",
+            "modern",
+            "business-travel"
         ],
         "guest_capacity": 2,
         "unavailable_dates": [
             "2025-08-25",
             "2025-08-26"
         ]
+    },
+    {
+        "property_id": "22d8fd52-2576-4c78-a264-5bb6ad892256",
+        "location": "Toronto",
+        "type": "studio",
+        "price_per_night": 500,
+        "features": [
+            "free parking",
+            "garage",
+            "air conditioning",
+            "heating"
+        ],
+        "tags": [
+            "city",
+            "lake",
+            "modern"
+        ],
+        "guest_capacity": 6,
+        "unavailable_dates": []
     }
 ]

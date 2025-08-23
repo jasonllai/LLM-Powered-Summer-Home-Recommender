@@ -22,15 +22,17 @@
         <div class="field">
           <label>Username</label>
           <input name="userid">
-          <div id="id-error" class="error hidden">This username has already been used by another user.</div>
+          <div id="err-userid" class="error hidden"></div>
         </div>
         <div class="field">
           <label>Name</label>
           <input name="name">
+          <div id="err-name" class="error hidden"></div>
         </div>
         <div class="field">
           <label>Password</label>
           <input type="password" name="password">
+          <div id="err-password" class="error hidden"></div>
         </div>
         <div class="field"><label>Preferred Environment</label>
           <select id="reg-preferred-env">
@@ -47,11 +49,10 @@
           </select>
         </div>
         <div class="row">
-          <div class="field"><label>Budget Min ($)</label><input type="number" id="reg-budget-min" min="1" step="1"></div>
-          <div class="field"><label>Budget Max ($)</label><input type="number" id="reg-budget-max" min="1" step="1"></div>
+          <div class="field"><label>Budget Min ($)</label><input type="number" id="reg-budget-min" min="1" step="1"><div id="err-bmin" class="error hidden"></div></div>
+          <div class="field"><label>Budget Max ($)</label><input type="number" id="reg-budget-max" min="1" step="1"><div id="err-bmax" class="error hidden"></div></div>
         </div>
-        <div class="field"><label>Group Size (1–10)</label><input type="number" id="reg-group-size" min="1" max="10" step="1"></div>
-        <div id="id-error" class="error hidden"></div>
+        <div class="field"><label>Group Size (1–10)</label><input type="number" id="reg-group-size" min="1" max="10" step="1"><div id="err-gsize" class="error hidden"></div></div>
         <div class="row" style="justify-content:flex-end;margin-top:6px">
           <button class="btn" type="submit">Sign up</button>
         </div>
