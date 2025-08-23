@@ -6,34 +6,6 @@ const USE_LOCAL = false;       // switch to backend
 const API_BASE = "http://127.0.0.1:5050";  // reuse your Flask host
 const ASSIST_API = "http://127.0.0.1:5050";
 
-// --- Local demo DB ---
-function seedDb() {
-  return {
-    users: [{
-      id:"jason", name:"Jason L", password:"test123",
-      bookingHistory:[], groupSize:2, preferredEnv:"beach", budgetRange:[150,300]
-    }],
-    admin: { id:"admin", password:"admin123" },
-    properties: [
-      { id: rnd(), location:"Tofino, BC", type:"Beach House", pricePerNight:280,
-        features:["Ocean view","Fire pit","Kayaks"], tags:["beach","quiet","family"], guestCapacity:6, unavailable:[] },
-      { id: rnd(), location:"Kelowna, BC", type:"Lake Cabin", pricePerNight:210,
-        features:["Dock","BBQ","Canoe"], tags:["lake","sunset"], guestCapacity:4, unavailable:[{start:"2025-08-25", end:"2025-08-30"}] },
-      { id: rnd(), location:"Prince Edward County, ON", type:"Country Cottage", pricePerNight:190,
-        features:["Vineyard nearby","Fireplace","Bikes"], tags:["countryside","wineries"], guestCapacity:5, unavailable:[] },
-      { id: rnd(), location:"Muskoka, ON", type:"Forest Chalet", pricePerNight:320,
-        features:["Hot tub","Sauna","Hiking trails"], tags:["forest","luxury"], guestCapacity:8, unavailable:[] },
-    ],
-    session: { userId:null, isAdmin:false }
-  };
-}
-function loadDb(){
-  const raw = localStorage.getItem("summerstay-db");
-  if(!raw){ const db = seedDb(); localStorage.setItem("summerstay-db", JSON.stringify(db)); return db; }
-  try { return JSON.parse(raw); } catch { const db = seedDb(); localStorage.setItem("summerstay-db", JSON.stringify(db)); return db; }
-}
-function saveDb(db){ localStorage.setItem("summerstay-db", JSON.stringify(db)); }
-let DB = USE_LOCAL ? loadDb() : null;
 function rnd(){ return (self.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)); }
 
 // --- Helpers ---
@@ -50,6 +22,15 @@ function requireAdmin(){ if(USE_LOCAL){ if(!DB.session.isAdmin) location.href="a
 function money(n){ return "$"+Number(n).toLocaleString(); }
 function dateOverlap(a,b){ return !(b.end < a.start || b.start > a.end); }
 function isAvailable(prop,start,end){ const req={start,end}; return !prop.unavailable?.some(r=>dateOverlap(r,req)); }
+function normalizeIsoDate(s){
+  const m = String(s||"").trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if(!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const dt = new Date(Date.UTC(y, mo-1, d));
+  if (dt.getUTCFullYear()!==y || (dt.getUTCMonth()+1)!==mo || dt.getUTCDate()!==d) return null;
+  const pad = n => String(n).padStart(2,'0');
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
 
 // --- Login Page ---
 function initLogin(isAdmin=false){
@@ -96,15 +77,62 @@ function initLogin(isAdmin=false){
 // --- Register Page ---
 function initRegister(){
   const form = qs("#register-form"); const idErr = qs("#id-error");
-  form?.addEventListener("submit",(e)=>{
-    if(!USE_LOCAL) return;
+  form?.addEventListener("submit", async (e)=>{
     e.preventDefault();
-    const id = qs("[name=userid]").value.trim();
-    const name = qs("[name=name]").value.trim();
-    const password = qs("[name=password]").value;
-    if(DB.users.some(u=>u.id===id)){ idErr.textContent="This ID has already been used by another user."; idErr.classList.remove("hidden"); return; }
-    DB.users.push({ id, name, password, bookingHistory:[], groupSize:2, preferredEnv:"beach", budgetRange:[150,300] });
-    DB.session.userId = id; saveDb(DB); location.href="dashboard.html";
+    const userid = qs("[name=userid]")?.value.trim();
+    const name = qs("[name=name]")?.value.trim();
+    const password = qs("[name=password]")?.value;
+    const preferredEnv = qs("#reg-preferred-env")?.value;
+    const budgetMin = parseInt(qs("#reg-budget-min")?.value, 10);
+    const budgetMax = parseInt(qs("#reg-budget-max")?.value, 10);
+    const groupSize = parseInt(qs("#reg-group-size")?.value, 10);
+
+    if(!userid || !name || !password){ idErr.textContent="Please fill all required fields."; idErr.classList.remove("hidden"); return; }
+    if(!Number.isInteger(groupSize) || groupSize < 1 || groupSize > 10){
+      idErr.textContent="Group size must be an integer between 1 and 10.";
+      idErr.classList.remove("hidden"); return;
+    }
+    if(!Number.isInteger(budgetMin) || !Number.isInteger(budgetMax) || budgetMin <= 0 || budgetMax < budgetMin){
+      idErr.textContent="Budget must be integers; min > 0 and max >= min.";
+      idErr.classList.remove("hidden"); return;
+    }
+
+    if(!USE_LOCAL){
+      idErr.classList.add("hidden");
+      try{
+        const r = await fetch(`${API_BASE}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: userid, name, password,
+            preferredEnv, budgetRange: [budgetMin, budgetMax],
+            groupSize
+          })
+        });
+        if(!r.ok){
+          const data = await r.json().catch(()=> ({}));
+          idErr.textContent = data?.error || "Failed to sign up.";
+          idErr.classList.remove("hidden");
+          return;
+        }
+        sessionStorage.setItem("userId", userid);
+        location.href = `dashboard.html?user=${encodeURIComponent(userid)}`;
+      }catch(err){
+        console.error(err);
+        idErr.textContent = "Failed to sign up. Please try again.";
+        idErr.classList.remove("hidden");
+      }
+      return;
+    }
+
+    // Local mock mode (optional – keep or remove)
+    if(DB.users.some(u=>u.id===userid)){ idErr.textContent="This username has been used."; idErr.classList.remove("hidden"); return; }
+    DB.users.push({
+      id: userid, name, password,
+      bookingHistory: [], groupSize, preferredEnv,
+      budgetRange: [budgetMin, budgetMax]
+    });
+    DB.session.userId = userid; saveDb(DB); location.href="dashboard.html";
   });
 }
 
@@ -122,76 +150,191 @@ function initDashboard(){
   qs("#logout")?.addEventListener("click", logoutAll);
   const searchLink = qs("a[href$='search.html']") || qs("#open-search");
   if (searchLink) searchLink.href = `search.html?user=${encodeURIComponent(userId)}`;
+  const profileLink = qs("a[href$='profile.html']") || qs("#open-profile");
+  if (profileLink) profileLink.href = `profile.html?user=${encodeURIComponent(userId)}`;
 }
 
 // --- Profile ---
 function initProfile(){
-  requireUser();
-  const user = DB.users.find(u=>u.id===DB.session.userId);
-  const map = {
-    id: user.id, name: user.name, password: user.password,
-    groupSize: user.groupSize, preferredEnv: user.preferredEnv, budgetRange: user.budgetRange?.join("–")
-  };
-  for(const [k,v] of Object.entries(map)){ const el = qs(`[data-val='${k}']`); if(el) el.textContent = v; }
-  // booking history
-  const list = qs("#bookings");
-  if(user.bookingHistory?.length){
-    list.innerHTML = user.bookingHistory.map(b => {
-      const p = (DB.properties||[]).find(x=>x.id===b.propertyId);
-      const name = p ? `${p.type} in ${p.location}` : "Property";
-      return `<div class="booking-item">
-        <div class="left">
-          <div class="name"><strong>${name}</strong></div>
-          <div class="kbd small">${b.propertyId.slice(0,8)}</div>
-        </div>
-        <div class="right small">${b.start} → ${b.end} · ${money(b.price)}/night</div>
-      </div>`;
-    }).join("");
-  } else list.innerHTML = `<div class="small">No bookings yet.</div>`;
-  qsa("[data-edit]").forEach(btn => {
-    btn.addEventListener("click", ()=>{
-      const key = btn.getAttribute("data-edit");
-      const row = btn.closest(".rowline"); row.querySelector(".view").classList.add("hidden"); row.querySelector(".edit").classList.remove("hidden");
-      if(key==="budgetRange"){
-        const [min,max] = user.budgetRange;
-        row.querySelector("[name=budgetMin]").value = min;
-        row.querySelector("[name=budgetMax]").value = max;
-      }else if(key==="preferredEnv"){
-        const sel = row.querySelector("select");
-        if(sel) sel.value = user.preferredEnv || "";
-      }else{
-        row.querySelector("input").value = user[key];
+  if (!USE_LOCAL){
+    const userId = urlParam("user") || sessionStorage.getItem("userId") || "";
+    qs("#logout")?.addEventListener("click", logoutAll);
+    if(!userId){ toast("Missing user id", false); return; }
+
+    let p = null; // current profile model shared by handlers
+
+    function setVal(k,v){
+      const el = qs(`[data-val='${k}']`);
+      if(el) el.textContent = (v ?? "");
+    }
+
+    function renderProfile(profile){
+      setVal("id", profile.id);
+      setVal("name", profile.name);
+      setVal("password", profile.password);
+      setVal("groupSize", profile.groupSize);
+      setVal("preferredEnv", profile.preferredEnv);
+      setVal("budgetRange", Array.isArray(profile.budgetRange) ? `${profile.budgetRange[0]}–${profile.budgetRange[1]}` : "");
+      const list = qs("#bookings");
+      const hist = Array.isArray(profile.bookingHistory) ? profile.bookingHistory : [];
+      list.innerHTML = hist.length
+        ? hist.map(b => `
+            <div class="booking-item">
+              <div class="left">
+                <div class="name"><strong>Property</strong></div>
+                <div class="kbd small">${(b.propertyId||"").slice(0,8)}</div>
+              </div>
+              <div class="right small">
+                ${b.start} → ${b.end}
+                <button class="btn danger small" data-del data-prop="${b.propertyId}" data-start="${b.start}" data-end="${b.end}" style="margin-left:8px">Delete</button>
+              </div>
+            </div>`).join("")
+        : `<div class="small">No bookings yet.</div>`;
+    }
+
+    qs("#bookings")?.addEventListener("click", async (e)=>{
+      const btn = e.target.closest("[data-del]");
+      if(!btn) return;
+      const propertyId = btn.getAttribute("data-prop");
+      const start = btn.getAttribute("data-start");
+      const end = btn.getAttribute("data-end");
+      btn.disabled = true;
+      try{
+        const r = await fetch(`${API_BASE}/booking/delete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, propertyId, start, end })
+        });
+        if(!r.ok){ toast("Failed to delete booking", false); btn.disabled = false; return; }
+        const { bookingHistory } = await r.json();
+        p.bookingHistory = bookingHistory || [];
+        renderProfile(p);
+        toast("Booking deleted", true);
+      }catch(err){
+        console.error(err);
+        toast("Failed to delete booking", false);
+        btn.disabled = false;
       }
     });
-  });
-  qsa("[data-save]").forEach(btn => {
-    btn.addEventListener("click", ()=>{
-      const key = btn.getAttribute("data-save");
-      if(key==="budgetRange"){
-        const min = Number(qs("[name=budgetMin]").value);
-        const max = Number(qs("[name=budgetMax]").value);
-        user.budgetRange = [min,max];
-        qs("[data-val='budgetRange']").textContent = `${min}–${max}`;
-      }else if(key==="preferredEnv"){
-        const val = btn.closest(".rowline").querySelector("select").value;
-        user.preferredEnv = val;
-        qs(`[data-val='preferredEnv']`).textContent = val;
-      }else{
-        const val = btn.closest(".rowline").querySelector("input").value;
-        user[key] = (key==="groupSize") ? Number(val) : val;
-        qs(`[data-val='${key}']`).textContent = user[key];
+
+    const delBtn = qs("#delete-account");
+    delBtn?.addEventListener("click", async ()=>{
+      const userId = urlParam("user") || sessionStorage.getItem("userId") || "";
+      if(!userId) { toast("Missing user id", false); return; }
+
+      // Optional confirm
+      if(!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+
+      try{
+        const r = await fetch(`${API_BASE}/account/delete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId })
+        });
+        if(!r.ok){ toast("Failed to delete account", false); return; }
+
+        // Clear client session and inform user
+        sessionStorage.removeItem("userId");
+        toast("Your account has been deleted. You will be redirected to the main page in 5 seconds…", true);
+        setTimeout(()=> { location.href = "index.html"; }, 5000);
+      }catch(e){
+        console.error(e);
+        toast("Failed to delete account", false);
       }
-      saveDb(DB);
-      const row = btn.closest(".rowline"); row.querySelector(".edit").classList.add("hidden"); row.querySelector(".view").classList.remove("hidden");
-      toast("Saved", true);
     });
-  });
-  qsa("[data-cancel]").forEach(btn => {
-    btn.addEventListener("click", ()=>{
-      const row = btn.closest(".rowline"); row.querySelector(".edit").classList.add("hidden"); row.querySelector(".view").classList.remove("hidden");
+
+    (async ()=>{
+      try{
+        const r = await fetch(`${API_BASE}/profile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId })
+        });
+        if(!r.ok){ toast("Unable to load profile", false); return; }
+        const { profile } = await r.json();
+        if(!profile){ toast("Profile not found", false); return; }
+        p = profile;
+        renderProfile(p);
+      }catch(e){
+        console.error(e);
+        toast("Unable to load profile", false);
+      }
+    })();
+
+    // Edit: show current values in inputs
+    qsa("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", ()=>{
+        const key = btn.getAttribute("data-edit");
+        const row = btn.closest(".rowline");
+        row.querySelector(".view").classList.add("hidden");
+        row.querySelector(".edit").classList.remove("hidden");
+        if(key==="budgetRange"){
+          const [min,max] = (p?.budgetRange || []);
+          row.querySelector("[name=budgetMin]").value = (min ?? "");
+          row.querySelector("[name=budgetMax]").value = (max ?? "");
+        }else if(key==="preferredEnv"){
+          const sel = row.querySelector("select"); if(sel) sel.value = p?.preferredEnv || "";
+        }else{
+          const inp = row.querySelector("input"); if(inp) {
+            const cur = key==="groupSize" ? (p?.groupSize ?? "") : (p?.[key] ?? "");
+            inp.value = cur;
+          }
+        }
+      });
     });
-  });
-  qs("#logout")?.addEventListener("click", logoutAll);
+
+    // Cancel
+    qsa("[data-cancel]").forEach(btn => {
+      btn.addEventListener("click", ()=>{
+        const row = btn.closest(".rowline");
+        row.querySelector(".edit").classList.add("hidden");
+        row.querySelector(".view").classList.remove("hidden");
+      });
+    });
+
+    // Save -> backend update, then re-render immediately
+    qsa("[data-save]").forEach(btn => {
+      btn.addEventListener("click", async ()=>{
+        const key = btn.getAttribute("data-save");
+        const row = btn.closest(".rowline");
+        const payload = { userId };
+
+        if(key==="name") payload.name = row.querySelector("input").value.trim();
+        else if(key==="password") payload.password = row.querySelector("input").value;
+        else if(key==="groupSize") payload.groupSize = Number(row.querySelector("input").value);
+        else if(key==="preferredEnv") payload.preferredEnv = row.querySelector("select").value;
+        else if(key==="budgetRange"){
+          const min = Number(row.querySelector("[name=budgetMin]").value);
+          const max = Number(row.querySelector("[name=budgetMax]").value);
+          payload.budgetRange = [min, max];
+        }
+
+        try{
+          const r = await fetch(`${API_BASE}/profile/update`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if(!r.ok){
+            const errText = await r.text().catch(()=> "");
+            console.error("update failed", errText);
+            toast("Failed to update profile", false);
+            return;
+          }
+          const { profile: np } = await r.json();
+          p = np;                // keep local model in sync
+          renderProfile(np);     // update UI immediately
+          row.querySelector(".edit").classList.add("hidden");
+          row.querySelector(".view").classList.remove("hidden");
+          toast("Saved", true);
+        }catch(e){
+          console.error(e);
+          toast("Failed to update profile", false);
+        }
+      });
+    });
+    return;
+  }
 }
 
 // --- Search ---
@@ -317,9 +460,10 @@ function initSearch(){
         tags: msTags.get()
       };
     }
-    
+
     async function runSearch(){
       const f = buildFilters();
+      const title = qs("#list-title"); if(title) title.textContent = "Search Results";
       if(USE_LOCAL){
         let list = recs.filter(p=>{
           if(f.loc && !p.location.startsWith(f.loc)) return false;
@@ -334,17 +478,54 @@ function initSearch(){
         });
         renderList(list);
       }else{
-        let list = recs.filter(p=>{
-          if(f.loc && !p.location.startsWith(f.loc)) return false;
-          if(f.typ && p.type!==f.typ) return false;
-          if(f.pmin && p.pricePerNight < Number(f.pmin)) return false;
-          if(f.pmax && p.pricePerNight > Number(f.pmax)) return false;
-          if(f.cap && p.guestCapacity < Number(f.cap)) return false;
-          if(f.features.length && !f.features.every(x=>p.features.includes(x))) return false;
-          if(f.tags.length && !f.tags.every(x=>p.tags.includes(x))) return false;
-          return true; // date filtering skipped in remote mode
-        });
-        renderList(list);
+        let pmin = f.pmin !== "" ? parseInt(f.pmin, 10) : null;
+        let pmax = f.pmax !== "" ? parseInt(f.pmax, 10) : null;
+        let cap  = f.cap  !== "" ? parseInt(f.cap, 10)  : null;
+
+        // Basic client checks
+        if(pmin !== null && (!Number.isInteger(pmin) || pmin < 0)){ toast("Min price must be an integer greater or equal to 0", false); return; }
+        if(pmax !== null && (!Number.isInteger(pmax) || pmax < 0)){ toast("Max price must be an integer greater or equal to 0", false); return; }
+        if(pmin !== null && pmax !== null && pmax < pmin){ toast("Max price must be greater or equal to min price", false); return; }
+        if(cap !== null && (!Number.isInteger(cap) || cap < 1 || cap > 10)){ toast("Guest capacity must be an integer 1–10", false); return; }
+
+        // Normalize dates
+        const start = f.start ? normalizeIsoDate(f.start) : null;
+        const end   = f.end   ? normalizeIsoDate(f.end)   : null;
+        if(f.start && !start){ toast("Invalid start date (use YYYY-MM-DD)", false); return; }
+        if(f.end   && !end)  { toast("Invalid end date (use YYYY-MM-DD)", false); return; }
+        if(start && end && new Date(start) > new Date(end)){ toast("End date must be on or after start date", false); return; }
+
+        const payload = {
+          location: f.loc || null,
+          propType: f.typ || null,
+          minPrice: pmin,
+          maxPrice: pmax,
+          groupSize: cap,
+          features: f.features.length ? f.features : null,
+          tags: f.tags.length ? f.tags : null,
+          startDate: start,
+          endDate: end
+        };
+
+        try{
+          const r = await fetch(`${API_BASE}/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if(!r.ok){
+            const data = await r.json().catch(()=> ({}));
+            toast(data?.error || "Search failed", false);
+            return;
+          }
+          const data = await r.json();
+          const list = Array.isArray(data.properties) ? data.properties : [];
+          const title = qs("#list-title"); if(title) title.textContent = "Search Results";
+          renderList(list);
+        } catch(err){
+          console.error(err);
+          toast("Search failed", false);
+        }
       }
     }
     
@@ -352,6 +533,7 @@ function initSearch(){
     qs("#reset")?.addEventListener("click", ()=>{
       qsa(".filter").forEach(f=>{ if(f.type==="checkbox") f.checked=false; else f.value=""; });
       msFeatures.clear(); msTags.clear();
+      const title = qs("#list-title"); if(title) title.textContent = "Recommended for you";
       renderList(recs);
     });
 
@@ -363,28 +545,46 @@ function initSearch(){
         qs("#book-"+id).classList.toggle("hidden");
       });
     });
+    
     qsa("[data-confirm]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
+      btn.addEventListener("click", async ()=>{
         const id = btn.getAttribute("data-confirm");
-        const start = qs("#start-"+id).value, end = qs("#end-"+id).value;
+        const startRaw = qs("#start-"+id).value, endRaw = qs("#end-"+id).value;
         const err = qs("#err-"+id);
-        if(!start || !end){ err.textContent="Please select start and end dates."; err.classList.remove("hidden"); return; }
+        if(!startRaw || !endRaw){ err.textContent="Please select start and end dates."; err.classList.remove("hidden"); return; }
+
+        const start = normalizeIsoDate(startRaw);
+        const end = normalizeIsoDate(endRaw);
+        if(!start || !end){ err.textContent="Invalid date format. Use YYYY-MM-DD."; err.classList.remove("hidden"); return; }
+
+        // frontend order check for fast UX
+        if(new Date(start) > new Date(end)){ err.textContent="End date cannot be before the start date."; err.classList.remove("hidden"); return; }
+
         if(!USE_LOCAL){
-          err.textContent = "Server-side booking not wired yet. Viewing recommendations only.";
-          err.classList.remove("hidden");
+          err.classList.add("hidden");
+          try{
+            const userId = urlParam("user") || sessionStorage.getItem("userId") || "";
+            const r = await fetch(`${API_BASE}/booking/create`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, propertyId: id, start, end })
+            });
+            if(!r.ok){
+              const data = await r.json().catch(()=> ({}));
+              err.textContent = data?.error || "Failed to create booking.";
+              err.classList.remove("hidden");
+              return;
+            }
+            toast("Booking successful!", true);
+            qs("#book-"+id).classList.add("hidden");
+          }catch(e){
+            console.error(e);
+            err.textContent = "Failed to create booking."; err.classList.remove("hidden");
+          }
           return;
         }
-        // local booking
-        const prop = DB.properties.find(p=>p.id===id);
-        if(!isAvailable(prop, start, end)){ err.textContent="This property is not available for those dates. Try other dates or another property."; err.classList.remove("hidden"); return; }
-        prop.unavailable.push({start,end});
-        const user = DB.users.find(u=>u.id===DB.session.userId);
-        user.bookingHistory.push({propertyId:id,start,end,price:prop.pricePerNight});
-        saveDb(DB);
-        toast("Booking confirmed!", true);
-        qs("#book-"+id).classList.add("hidden");
       });
-    });
+});
   }
 
 

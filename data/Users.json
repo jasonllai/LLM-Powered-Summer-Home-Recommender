@@ -1,8 +1,8 @@
 [
     {
         "user_id": "alice",
-        "name": "Alice",
-        "password": "alice123",
+        "name": "Alissa",
+        "password": "alice1234",
         "booking_history": [
             {
                 "property_id": "b2c3d4e5-f6a7-4890-9123-4567890abcde",
@@ -15,9 +15,9 @@
                 "end_date": "2025-08-26"
             },
             {
-                "property_id": "edc64003-60c4-4aeb-80ed-3033af218a84",
-                "start_date": "2025-08-23",
-                "end_date": "2025-08-24"
+                "property_id": "a7b8c9d0-e1f2-5345-9678-90abcdef1234",
+                "start_date": "2025-08-27",
+                "end_date": "2025-08-29"
             }
         ],
         "group_size": 2,

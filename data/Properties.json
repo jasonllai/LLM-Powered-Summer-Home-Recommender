@@ -121,7 +121,11 @@
             "nightlife"
         ],
         "guest_capacity": 2,
-        "unavailable_dates": []
+        "unavailable_dates": [
+            "2025-08-27",
+            "2025-08-28",
+            "2025-08-29"
+        ]
     },
     {
         "property_id": "b8c9d0e1-f2a3-5456-9789-0abcdef12345",
@@ -435,7 +439,7 @@
     {
         "property_id": "edc64003-60c4-4aeb-80ed-3033af218a84",
         "location": "Toronto",
-        "type": "Apartment",
+        "type": "apartment",
         "price_per_night": 120,
         "features": [
             "Wifi",
@@ -447,8 +451,6 @@
         ],
         "guest_capacity": 2,
         "unavailable_dates": [
-            "2025-08-23",
-            "2025-08-24",
             "2025-08-25",
             "2025-08-26"
         ]

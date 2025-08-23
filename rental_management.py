@@ -255,16 +255,53 @@ def view_user_profile(user_id, file_path="data/Users.json"):
 
 
 # delete a user profile with user id, also delete the booking of property by the user
-def delete_profile(user_id):
-    users_obj_list = [User.from_dict(d) for d in load_data_from_json("data/Users.json")]
-    for i, user in enumerate(users_obj_list):
-        if user.user_id == user_id:
-            users_obj_list.pop(i)
-            print(f"Deleted user ID {user_id}")
-            users_data = [u.to_dict() for u in users_obj_list]
-            save_data_to_json("data/Users.json", users_data)
-            return
-    print(f"No user found with ID {user_id}")
+def delete_profile(user_id, users_file_path="data/Users.json", properties_file_path="data/Properties.json"):
+    users = load_data_from_json(users_file_path)
+    properties = load_data_from_json(properties_file_path)
+
+    # Find the user to delete
+    idx_to_delete = next((i for i, u in enumerate(users) if u.get('user_id') == user_id), None)
+    if idx_to_delete is None:
+        print(f"No user found with ID {user_id}")
+        return
+
+    user = users[idx_to_delete]
+    # Properties impacted by this user's bookings
+    impacted_property_ids = {b.get('property_id') for b in user.get('booking_history', []) if b.get('property_id')}
+
+    # Remove the user
+    users.pop(idx_to_delete)
+    print(f"Deleted user ID {user_id}")
+
+    # Recompute unavailable_dates for impacted properties based on remaining users
+    if impacted_property_ids:
+        for prop_id in impacted_property_ids:
+            # Find the property
+            p_idx = next((i for i, p in enumerate(properties) if p.get('property_id') == prop_id), None)
+            if p_idx is None:
+                # Property may have been removed or never existed; skip
+                continue
+
+            # Aggregate dates from all remaining users' bookings for this property
+            all_dates = set()
+            for u in users:
+                for b in u.get('booking_history', []):
+                    if b.get('property_id') == prop_id and b.get('start_date') and b.get('end_date'):
+                        try:
+                            dr = pd.date_range(start=b['start_date'], end=b['end_date']).strftime("%Y-%m-%d").tolist()
+                            all_dates.update(dr)
+                        except Exception:
+                            pass
+
+            # Update property's unavailable dates
+            prop = properties[p_idx]
+            prop['unavailable_dates'] = sorted(all_dates)
+            properties[p_idx] = prop
+
+    # Persist changes
+    save_data_to_json(users_file_path, users)
+    save_data_to_json(properties_file_path, properties)
+
     
 
 

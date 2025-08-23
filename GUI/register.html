@@ -32,6 +32,26 @@
           <label>Password</label>
           <input type="password" name="password">
         </div>
+        <div class="field"><label>Preferred Environment</label>
+          <select id="reg-preferred-env">
+            <option value="beach">Beach</option>
+            <option value="lake">Lake</option>
+            <option value="forest">Forest</option>
+            <option value="mountains">Mountains</option>
+            <option value="nightlife">Nightlife</option>
+            <option value="remote">Remote</option>
+            <option value="glamping">Glamping</option>
+            <option value="city">City</option>
+            <option value="modern">Modern</option>
+            <option value="historic">Historic</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="field"><label>Budget Min ($)</label><input type="number" id="reg-budget-min" min="1" step="1"></div>
+          <div class="field"><label>Budget Max ($)</label><input type="number" id="reg-budget-max" min="1" step="1"></div>
+        </div>
+        <div class="field"><label>Group Size (1–10)</label><input type="number" id="reg-group-size" min="1" max="10" step="1"></div>
+        <div id="id-error" class="error hidden"></div>
         <div class="row" style="justify-content:flex-end;margin-top:6px">
           <button class="btn" type="submit">Sign up</button>
         </div>
