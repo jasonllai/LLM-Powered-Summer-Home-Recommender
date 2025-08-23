@@ -124,6 +124,24 @@ def validate_date(date_str):
 
 # Functions for Admin and User
 
+# validate admin login
+def validate_admin(admin_id, password):
+    admin_data = load_data_from_json("data/Admin.json")
+    admin = next((a for a in admin_data if a.get("admin_id") == admin_id and a.get("password") == password), None)
+    if admin:
+        return True
+    else:
+        return False
+    
+# validate user login
+def validate_user(user_id, password):
+    user_data = load_data_from_json("data/Users.json")
+    user = next((a for a in user_data if a.get("user_id") == user_id and a.get("password") == password), None)
+    if user:
+        return True
+    else:
+        return False
+
 # return all properties in the json file
 def view_properties(file_path="data/Properties.json"):
     properties_data = load_data_from_json(file_path)

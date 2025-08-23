@@ -1,0 +1,26 @@
+[
+    {
+        "admin_id": "admin",
+        "password": "admin123"
+    },
+    {
+        "admin_id": "jason",
+        "password": "adminjason"
+    },
+    {
+        "admin_id": "henry",
+        "password": "adminhenry"
+    },
+    {
+        "admin_id": "nikol",
+        "password": "adminnikol"
+    },
+    {
+        "admin_id": "jennifer",
+        "password": "adminjennifer"
+    },
+    {
+        "admin_id": "winnie",
+        "password": "adminwinnie"
+    }
+]
