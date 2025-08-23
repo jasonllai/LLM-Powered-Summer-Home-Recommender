@@ -2,8 +2,8 @@
    - USE_LOCAL = true => mock backend with localStorage.
    - Switch to server endpoints later by setting USE_LOCAL = false.
 */
-const USE_LOCAL = true;
-const API_BASE = ""; // e.g., "/api"
+const USE_LOCAL = false;       // switch to backend
+const API_BASE = "http://127.0.0.1:5050";  // reuse your Flask host
 const ASSIST_API = "http://127.0.0.1:5050";
 
 // --- Local demo DB ---
@@ -55,20 +55,41 @@ function isAvailable(prop,start,end){ const req={start,end}; return !prop.unavai
 function initLogin(isAdmin=false){
   const form = qs("#login-form"); const err = qs("#login-error");
   const prevErr = urlParam("error"); if(prevErr) { err.textContent = isAdmin ? "Admin ID or password is incorrect, please try again." : "User ID or password is incorrect, please try again."; err.classList.remove("hidden"); }
-  form?.addEventListener("submit", (e)=>{
-    if(!USE_LOCAL) return; // let the server handle
+  form?.addEventListener("submit", async (e)=>{
     e.preventDefault();
     const userid = qs("[name=userid]").value.trim();
     const password = qs("[name=password]").value;
-    if(isAdmin){
-      const ok = (userid===DB.admin.id && password===DB.admin.password);
-      if(!ok){ err.textContent="Admin ID or password is incorrect, please try again."; err.classList.remove("hidden"); return; }
-      DB.session.isAdmin = true; saveDb(DB); location.href="admin.html";
-    }else{
-      const ok = DB.users.some(u=>u.id===userid && u.password===password);
-      if(!ok){ err.textContent="User ID or password is incorrect, please try again."; err.classList.remove("hidden"); return; }
-      DB.session.userId = userid; saveDb(DB); location.href="dashboard.html";
+    if(!userid || !password) return;
+  
+    if(!USE_LOCAL){
+      try{
+        const r = await fetch(`${API_BASE}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userid, password })
+        });
+        if(!r.ok){
+          err.textContent = "User ID or password is incorrect, please try again.";
+          err.classList.remove("hidden");
+          return;
+        }
+        sessionStorage.setItem("userId", userid);
+        location.href = `dashboard.html?user=${encodeURIComponent(userid)}`;
+      }catch{
+        err.textContent = "Unable to log in. Please try again.";
+        err.classList.remove("hidden");
+      }
+      return;
     }
+  
+    // LOCAL MODE ONLY (keep this; remove any redirect before checks)
+    const ok = DB.users.some(u=>u.id===userid && u.password===password);
+    if(!ok){
+      err.textContent="User ID or password is incorrect, please try again.";
+      err.classList.remove("hidden");
+      return;
+    }
+    DB.session.userId = userid; saveDb(DB); location.href="dashboard.html";
   });
 }
 
@@ -89,10 +110,18 @@ function initRegister(){
 
 // --- Dashboard ---
 function initDashboard(){
-  requireUser();
-  const user = DB.users.find(u=>u.id===DB.session.userId);
-  qs("#hello").textContent = `Welcome, ${user?.name || ""}`;
+  if (USE_LOCAL){
+    requireUser();
+    const user = DB.users.find(u=>u.id===DB.session.userId);
+    qs("#hello").textContent = `Welcome, ${user?.name || ""}`;
+    qs("#logout")?.addEventListener("click", logoutAll);
+    return;
+  }
+  const userId = urlParam("user") || sessionStorage.getItem("userId") || "";
+  qs("#hello").textContent = `Welcome, ${userId || ""}`;
   qs("#logout")?.addEventListener("click", logoutAll);
+  const searchLink = qs("a[href$='search.html']") || qs("#open-search");
+  if (searchLink) searchLink.href = `search.html?user=${encodeURIComponent(userId)}`;
 }
 
 // --- Profile ---
@@ -168,10 +197,32 @@ function initProfile(){
 // --- Search ---
 function initSearch(){
   requireUser();
-  const user = DB.users.find(u=>u.id===DB.session.userId);
+  let userId = urlParam("user") || sessionStorage.getItem("userId") || "";
+  if(!userId){ console.error("Missing userId for recommendations"); return; }
+
+  let recs = [];
+  async function fetchRecs(){
+    try{
+      const r = await fetch(`${API_BASE}/recommend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      recs = Array.isArray(data.properties) ? data.properties : [];
+      renderList(recs);
+    }catch(err){
+      console.error(err);
+      renderList([]);
+    }
+  }
+
+  fetchRecs();
+
   qs("#logout")?.addEventListener("click", logoutAll);
+
   // fill filters
-  const props = DB.properties;
   const types = ["cabin", "apartment", "cottage", "loft", "villa", "tiny house", "studio"];
   const locations = ["Vancouver", "Toronto", "Montreal", "Calgary", "Edmonton", 
     "Winnipeg", "Halifax", "Victoria", "Quebec City", "Fredericton"];
@@ -207,15 +258,6 @@ function initSearch(){
   }
   const msFeatures = buildMulti("#btn-features", "#dd-features", features, "Any features");
   const msTags = buildMulti("#btn-tags", "#dd-tags", tags, "Any tags");
-
-  // recommendations
-  function score(p){
-    let s=0; if(p.tags.includes(user.preferredEnv)) s+=2;
-    const [min,max] = user.budgetRange || [0,999999]; if(p.pricePerNight>=min && p.pricePerNight<=max) s+=1;
-    if(p.guestCapacity >= (user.groupSize||1)) s+=1; return s;
-  }
-  let recs = props.slice().sort((a,b)=>score(b)-score(a));
-  renderList(recs);
 
   function renderList(list){
     const wrap = qs("#results"); if(!wrap) return;
@@ -292,10 +334,17 @@ function initSearch(){
         });
         renderList(list);
       }else{
-        // Hook for your Python backend:
-        // const res = await fetch(`${API_BASE}/search`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(f) });
-        // const list = await res.json();
-        // renderList(list);
+        let list = recs.filter(p=>{
+          if(f.loc && !p.location.startsWith(f.loc)) return false;
+          if(f.typ && p.type!==f.typ) return false;
+          if(f.pmin && p.pricePerNight < Number(f.pmin)) return false;
+          if(f.pmax && p.pricePerNight > Number(f.pmax)) return false;
+          if(f.cap && p.guestCapacity < Number(f.cap)) return false;
+          if(f.features.length && !f.features.every(x=>p.features.includes(x))) return false;
+          if(f.tags.length && !f.tags.every(x=>p.tags.includes(x))) return false;
+          return true; // date filtering skipped in remote mode
+        });
+        renderList(list);
       }
     }
     
@@ -320,6 +369,11 @@ function initSearch(){
         const start = qs("#start-"+id).value, end = qs("#end-"+id).value;
         const err = qs("#err-"+id);
         if(!start || !end){ err.textContent="Please select start and end dates."; err.classList.remove("hidden"); return; }
+        if(!USE_LOCAL){
+          err.textContent = "Server-side booking not wired yet. Viewing recommendations only.";
+          err.classList.remove("hidden");
+          return;
+        }
         // local booking
         const prop = DB.properties.find(p=>p.id===id);
         if(!isAvailable(prop, start, end)){ err.textContent="This property is not available for those dates. Try other dates or another property."; err.classList.remove("hidden"); return; }
@@ -332,6 +386,7 @@ function initSearch(){
       });
     });
   }
+
 
   // --- AI Assistant UI ---
   // Floating button

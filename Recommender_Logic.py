@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta, date
-import pandas as pd
-from difflib import get_close_matches, SequenceMatcher
 import json 
+import pandas as pd
+from rental_management import load_data_from_json
+from difflib import get_close_matches, SequenceMatcher
+
 
 class ListingRecommender():
     def __init__(self):
-        with open('data/Properties.json', 'r') as properties:
-            self.property_list = json.load(properties)
+        self.property_list = load_data_from_json("data/Properties.json")
         # Tags correlation table
         tags_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
                     "river", "ocean", "forest", "park", "national park", "state park", 
@@ -94,7 +94,11 @@ class ListingRecommender():
             group_size_score = round(3 - ((3 / capacity) * (capacity - group_size)), 2)
         return group_size_score
 
-    def calculate_total_score(self, active_user):
+    def calculate_total_score(self, user_id):
+        active_user = load_data_from_json("data/Users.json")
+        active_user = next((u for u in active_user if u.get("user_id") == user_id), None)
+        if not active_user:
+            return []
         rows = []
         for prop in self.property_list:
             tag_score = self.calculate_tag_score(active_user, prop.get("tags", []))
@@ -111,8 +115,8 @@ class ListingRecommender():
                 "type": prop.get("type", ""),
                 "price_per_night": price,
                 "guest_capacity": prop.get("guest_capacity"),
-                "tags": ", ".join(prop.get("tags", [])),
-                "features": ", ".join(prop.get("features", [])),
+                "tags": prop.get("tags", []),
+                "features": prop.get("features", []),
                 "total_score": round(tag_score + group_size_score + price_score,2)
         })
         # Sorting by descending order and choose top 20
@@ -121,24 +125,24 @@ class ListingRecommender():
 
 
 
-#Example usage
-with open('data/Users.json', 'r') as users:
-    users_list = json.load(users)
+# #Example usage
+# with open('data/Users.json', 'r') as users:
+#     users_list = json.load(users)
 
-active_user_id = 1
-for user in users_list:
-    if user["user_id"] == active_user_id:
-        active_user = user
-        break
+# active_user_id = 1
+# for user in users_list:
+#     if user["user_id"] == active_user_id:
+#         active_user = user
+#         break
     
-recommender = ListingRecommender()
-property_listing_calculated_scores = recommender.calculate_total_score(active_user)
-print('#' * 50)
-# print(property_listing_calculated_scores)
-print('#' * 50)
+# recommender = ListingRecommender()
+# property_listing_calculated_scores = recommender.calculate_total_score(active_user)
+# print('#' * 50)
+# # print(property_listing_calculated_scores)
+# print('#' * 50)
 
-properties_df = pd.DataFrame(property_listing_calculated_scores)
-properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
-properties_df = properties_df.drop(columns=["total_score"])
-properties_df["property_index"] = properties_df.index
-print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])
+# properties_df = pd.DataFrame(property_listing_calculated_scores)
+# properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
+# properties_df = properties_df.drop(columns=["total_score"])
+# properties_df["property_index"] = properties_df.index
+# print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])
