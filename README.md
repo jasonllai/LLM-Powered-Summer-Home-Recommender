@@ -1,46 +1,31 @@
 # LLM-Powered Summer Home Recommender
 
-A Python-based recommendation system for summer home rentals that matches users with properties based on their travel dates, preferences, budget, and group size, with AI-powered recommendations.
+A Python-based recommendation system for summer home rentals. It matches users with properties based on travel dates, preferences, budget, and group size, enhanced with AI-powered suggestions.
+
 
 ## 🏠 Features
-features for admin and for user.
-For admin: admin can create property, delete property, and edit property.
+-**Admin Portal**: 
+
+  Property Management: add, edit, or delete property listings.
 
 
-- **Property Management**: Comprehensive property listings with detailed information including location, type, price, features, and tags
-- **User Profiles**: User management system with preferences, budget constraints, and group size requirements
-- **Smart Matching**: Algorithm to match users with suitable properties based on budget and preferences
-- **Ontario Focus**: Specialized in Ontario summer destinations including Blue Mountain, Niagara-on-the-Lake, Tobermory, and more
+-**User Portal**:  
 
-## 📋 Property Types Available
+  **User Profile Management**: sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.  
 
-- Cabins
-- Apartments
-- Guesthouses
-- Cottages
-- Lofts
-- Villas
-- Tiny Houses
-- Studios
+  **Property Recommendations**: see your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
 
-## 🏖️ Destinations Covered
+  **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., “Perfect mountain cabin trip for 4 friends under $200/night.”
 
-- Blue Mountain, Ontario
-- Niagara-on-the-Lake, Ontario
-- Tobermory, Ontario
-- Toronto, Ontario
-- Wasaga Beach, Ontario
-- Muskoka, Ontario
-- Prince Edward County, Ontario
-- Ottawa, Ontario
-- Algonquin Park, Ontario
-- Kingston, Ontario
+## 🔍 Property Recommendation Logic
+
+Each property is scored based on the user's profile — how close the price is to the user’s budget, how well the property’s guest capacity matches the user’s group size, and whether the property matches the user’s preferred environment. 
 
 ## 🚀 Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/LLM-Powered-Summer-Home-Recommender.git
+git clone https://github.com/jasonllai/LLM-Powered-Summer-Home-Recommender.git
 cd LLM-Powered-Summer-Home-Recommender
 ```
 
@@ -71,29 +56,6 @@ LLM-Powered-Summer-Home-Recommender/
 ├── requirements.txt    # Python dependencies
 └── .gitignore         # Git ignore rules
 ```
-
-## 🧩 Core Classes
-
-### Property Class
-- `property_id`: Unique identifier
-- `location`: Property location
-- `type`: Type of accommodation
-- `price_per_night`: Nightly rate
-- `features`: List of amenities
-- `tags`: Property characteristics
-
-### User Class
-- `user_id`: Unique identifier
-- `name`: User's name
-- `group_size`: Number of travelers
-- `preferred_environment`: Preferred setting (beach, mountains, city, etc.)
-- `budget`: Maximum budget per night
-
-## 🔍 Matching Algorithm
-
-The system matches users with properties based on:
-- Budget compatibility (`property.price_per_night <= user.budget`)
-- Future enhancements can include environment preferences and group size considerations
 
 ## 🛠️ Development
 
