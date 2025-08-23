@@ -277,7 +277,7 @@ def create_booking(user_id, property_id,
     # Validate dates
     if not validate_date(start_date) or not validate_date(end_date):
         print("Invalid date format. Use YYYY-MM-DD.")
-        return
+        return False
 
     # Load data
     users = load_data_from_json(users_file_path)
@@ -289,24 +289,24 @@ def create_booking(user_id, property_id,
 
     if not user:
         print(f"No user found with ID {user_id}")
-        return
+        return False
     if not prop:
         print(f"No property found with ID {property_id}")
-        return
+        return False
 
     # Build inclusive date range as ISO strings
     try:
         date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d").tolist()
     except Exception as e:
         print(f"Invalid date input: {e}")
-        return
+        return False
 
     # Check availability
     existing = set(prop.get('unavailable_dates', []))
     conflict = existing.intersection(date_range)
     if conflict:
         print("Property is not available for the requested dates.")
-        return
+        return False
 
     # Update property unavailable dates
     prop['unavailable_dates'] = sorted(existing.union(date_range))
@@ -334,6 +334,7 @@ def create_booking(user_id, property_id,
     print("Booking successful!")
     print(f"User '{user.get('name', user_id)}' booked property '{prop.get('type', property_id)}' "
           f"from {start_date} to {end_date}.")
+    return True
 
 
 
