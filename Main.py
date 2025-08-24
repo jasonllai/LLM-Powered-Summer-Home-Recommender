@@ -465,7 +465,7 @@ def main():
                         elif choice_7 == "p":
                             print("Here are the properties listed in our app: ")
                             pd.set_option("display.max_colwidth", 20)
-                            print(pd.DataFrame(view_users()).drop(columns = "property_id"))
+                            print(pd.DataFrame(view_properties()).drop(columns = "property_id"))
 
                         elif choice_7 == "a":
                             print("\n===Adding A New Property ===")
@@ -479,16 +479,102 @@ def main():
                             add_properties(prop_location, prop_type, prop_price, prop_features, prop_tags, prop_guest_capacity)
 
                         elif choice_7 == "e":
-                            property_id = input("Enter the property id you want to update: ")
-                            # Call update_property(property_id)
+                            
+                            while True:
+                                print(f"\n=== Editing Property ===")
+                                property_obj_list = [Property.from_dict(d) for d in load_data_from_json("data/Properties.json")]
+
+                                pd.set_option("display.max_colwidth", 20)
+                                properties_dict = view_properties()
+                                properties_df = pd.DataFrame(properties_dict)
+                                print(properties_df.drop(columns = "property_id"))
+
+                                edit_prop_index = get_int_input("Enter the index of the property you want to update: ")
+                                edit_prop_id = properties_df.loc[edit_prop_index]["property_id"]
+
+                                edit_prop = next((p for p in property_obj_list if p.property_id == edit_prop_id), None)
+
+                                new_property_id = edit_prop.property_id
+                                new_location = edit_prop.location
+                                new_p_type = edit_prop.p_type
+                                new_price = edit_prop.price_per_night
+                                new_features = edit_prop.features
+                                new_tags = edit_prop.tags
+                                new_guest_capacity = edit_prop.guest_capacity
+                                new_unavailable_dates = edit_prop.unavailable_dates
+
+                                print("\nWhat would you like to edit?")
+                                print("[1] Location")
+                                print("[2] Property type")
+                                print("[3] Price per night")
+                                print("[4] Features")
+                                print("[5] Tags")
+                                print("[6] Guest capacity")
+                                print("[7] Exit")
+
+                                prop_edit_choice = input("Enter your choice (1-7): ").strip()
+
+                                if prop_edit_choice == "1":
+                                    print("Please enter the new location from the list below: ")
+                                    print(location_pool)
+                                    new_location = get_string_input("New location: ", location_pool)
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+           
+                                elif prop_edit_choice == "2":
+                                    print("Please enter the new property type from the list below: ")
+                                    print(type_pool)
+                                    new_p_type = get_string_input("New property type: ", type_pool)
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+                                    
+                                elif prop_edit_choice == "3":
+                                    new_price = get_int_input("New price per night (integer): ")
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+
+                                elif prop_edit_choice == "4":
+                                    print("Please enter the new featurese from the list below: ")
+                                    print("If the property has multiple features, please separate each feature by comma.")
+                                    print(feature_pool)
+                                    new_features = get_string_list_input("New property features: ", feature_pool)
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+
+                                elif prop_edit_choice == "5":
+                                    print("Please enter the new tags from the list below: ")
+                                    print("If the property has multiple tags, please separate each tag by comma.")
+                                    print(tag_pool)
+                                    new_tags = get_string_list_input("New property tags: ", tag_pool)
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+
+                                elif prop_edit_choice == "6":
+                                    new_guest_capacity = get_int_input("New guest capacity (integer): ")
+                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                    update_property(new_prop_dict)
+                                            
+                                elif prop_edit_choice == "7":
+                                    print("Edit session completed!")
+                                    break
+
+                                else:
+                                    print("Invalid choice!")
+
 
                         elif choice_7 == "d":
-                            property_id = input("Enter the property id you want to delete: ")
-                            # Call delete_properties(property_id)
+                            pd.set_option("display.max_colwidth", 20)
+                            properties_dict = view_properties()
+                            properties_df = pd.DataFrame(properties_dict)
+                            print(properties_df.drop(columns = "property_id"))
+                            delete_prop_index = get_int_input("Enter the index of the property you want to delete: ")
+                            delete_prop_id = properties_df.loc[delete_prop_index]["property_id"]
+
+                            delete_property(delete_prop_id)
 
                         elif choice_7 == "g":
-                            n = input("Enter the number of properties you want to generate: ")
-                            # Call LLM function that generates n properties
+                            n = get_int_input("Enter the number of properties you want to generate: ")
+                            # generate_properties(n)
 
                         elif choice_7 == "x":
                             print("Log out successfully!")
