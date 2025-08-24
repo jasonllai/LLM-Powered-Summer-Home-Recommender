@@ -7,8 +7,8 @@ from rental_management import validate_user, validate_admin
 from rental_management import create_user_profile, view_user_profile, delete_profile, edit_user_profile, create_booking, delete_booking
 from rental_management import view_users, view_properties, add_properties, delete_property, update_property
 
-from Recommender_Logic import ListingRecommender
-from Filter_And_Sort import filter_properties
+from recommender_logic import ListingRecommender
+from filter import filter_properties
 # from LLM_functions import generate_properties, generate_suggestions
 from utils import get_int_input, get_string_input, get_string_list_input
 
