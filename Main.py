@@ -436,9 +436,15 @@ def main():
                 choice_6 = input()
 
                 if choice_6 == "1":
-                    admin_username = input("Please enter your username: ")
-                    admin_password = input("Please enter your password: ")
-                    admin_logged_in = validate_admin(admin_username, admin_password)
+                    admin_id_input = input("Please enter your username: ")
+                    admin_password_input = input("Please enter your password: ")
+
+                    if validate_admin(admin_id_input, admin_password_input):
+                        print("Log in successful!")
+                        admin_logged_in = True
+                    
+                    else:
+                        print("Admin id and password do not match!")
 
                     while admin_logged_in:
                         print("Welcome Administrator! Please select from the following options: ")
@@ -453,11 +459,13 @@ def main():
 
                         if choice_7 == "u":
                             print("Here are the registered users in our app: ")
-                            # view_users()
+                            pd.set_option("display.max_colwidth", 30)
+                            print(pd.DataFrame(view_users()))
 
                         elif choice_7 == "p":
                             print("Here are the properties listed in our app: ")
-                            # view_properties()
+                            pd.set_option("display.max_colwidth", 20)
+                            print(pd.DataFrame(view_users()).drop(columns = "property_id"))
 
                         elif choice_7 == "a":
                             print("\n===Adding A New Property ===")
@@ -468,7 +476,7 @@ def main():
                             prop_tags = get_string_list_input("Tags (please separate tags by comma): ", tag_pool)
                             prop_guest_capacity = get_int_input("Guest capacity: ")
 
-                            # add_property(prop_location, prop_type, prop_price, prop_features, prop_tags, prop_guest_capacity)
+                            add_properties(prop_location, prop_type, prop_price, prop_features, prop_tags, prop_guest_capacity)
 
                         elif choice_7 == "e":
                             property_id = input("Enter the property id you want to update: ")
