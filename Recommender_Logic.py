@@ -122,27 +122,3 @@ class ListingRecommender():
         # Sorting by descending order and choose top 20
         recommender_output = sorted(rows, key = lambda x: x['total_score'],reverse = True)[:20]
         return recommender_output
-
-
-
-# #Example usage
-# with open('data/Users.json', 'r') as users:
-#     users_list = json.load(users)
-
-# active_user_id = 1
-# for user in users_list:
-#     if user["user_id"] == active_user_id:
-#         active_user = user
-#         break
-    
-# recommender = ListingRecommender()
-# property_listing_calculated_scores = recommender.calculate_total_score(active_user)
-# print('#' * 50)
-# # print(property_listing_calculated_scores)
-# print('#' * 50)
-
-# properties_df = pd.DataFrame(property_listing_calculated_scores)
-# properties_df["tags"] = properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
-# properties_df = properties_df.drop(columns=["total_score"])
-# properties_df["property_index"] = properties_df.index
-# print(properties_df[["location", "type", "price_per_night", "guest_capacity", "tags"]])
