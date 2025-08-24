@@ -125,6 +125,11 @@ footer{padding:32px 0;color:#64748b}
 .ai-list li::before{
   content:"–"; position:absolute; left:0; color:#334155;
 }
+.ai-list{ margin:6px 0 8px 0; padding-left:0 }
+.ai-list .ai-list{ margin-left:14px; }  /* indent nested sub-lists */
+.ai-list li{
+  list-style:none; position:relative; margin:4px 0; padding-left:16px;
+}
 .ai-msg .bubble p{ margin:4px 0 }
 
 /* Multiselect dropdowns */

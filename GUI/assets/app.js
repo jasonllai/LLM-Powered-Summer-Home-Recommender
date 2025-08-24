@@ -677,24 +677,41 @@ function initSearch(){
   const thread = [];
 
   function renderRich(text){
-    const lines = String(text || "").split(/\r?\n/);
-    let html = "", inList = false;
-    const flush = ()=>{ if(inList){ html += "</ul>"; inList=false; } };
+    const lines = String(text||"").split(/\r?\n/);
+    let html = "";
+    let depth = 0;
+  
+    const open = (n)=>{ for(let i=0;i<n;i++){ html += `<ul class="ai-list">`; depth++; } };
+    const close = (n)=>{ for(let i=0;i<n;i++){ html += `</ul>`; depth--; } };
+    const closeAll = ()=>{ if(depth>0) close(depth); };
+  
     for(const raw of lines){
-      const line = raw.trimEnd();
-      if(!line.trim()){ flush(); html += "<div style='height:6px'></div>"; continue; }
-      const h = line.match(/^\*\*(.+?)\*\*:?$/); // full-line bold as a section title
-      if(h){ flush(); html += `<div class="ai-h">${escapeHtml(h[1])}</div>`; continue; }
-      const m = line.match(/^(?:\*|-)\s+(.*)$/); // bullet lines starting with * or -
-      if(m){
-        if(!inList){ html += `<ul class="ai-list">`; inList = true; }
-        html += `<li>${escapeHtml(m[1])}</li>`;
+      const line = raw.replace(/\u00A0/g," ").trimEnd();
+      if(!line.trim()){ continue; }
+  
+      // Headings: #, ##, ### …
+      const h = line.match(/^#{1,6}\s+(.*)$/);
+      if(h){ closeAll(); html += `<div class="ai-h">${escapeHtml(h[1])}</div>`; continue; }
+  
+      // Hyphen bullets with nesting by indentation (2 spaces per level)
+      const b = line.match(/^(\s*)-\s+(.*)$/);
+      if(b){
+        const indent = b[1].length;
+        const target = Math.min(4, Math.floor(indent/2)); // 0,1,2,...
+        if(target > depth) open(target - depth);
+        else if(target < depth) close(depth - target);
+  
+        let content = escapeHtml(b[2]).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+        html += `<li>${content}</li>`;
         continue;
       }
-      flush();
-      html += `<p>${escapeHtml(line)}</p>`;
+  
+      // Paragraph line; close any open lists
+      closeAll();
+      let safe = escapeHtml(line).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+      html += `<p>${safe}</p>`;
     }
-    flush();
+    closeAll();
     return html;
   }
   

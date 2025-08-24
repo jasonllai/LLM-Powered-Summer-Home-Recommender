@@ -84,7 +84,7 @@ def assistant():
         text = generate_suggestions_text(user_input=user_input, messages=history)
         return jsonify(text=text)
     except Exception as e:
-        import traceback; traceback.print_exc()   # prints full stack
+        import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
     
     

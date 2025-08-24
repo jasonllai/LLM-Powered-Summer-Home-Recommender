@@ -121,10 +121,30 @@ CONTENT RULES
 - Max 5 activity ideas; each with: name, 1‑line why, duration, best time, cost level (free/$/$$/$$$), booking recommended?, quick tip.
 - If # of days is given, add a simple morning/afternoon/evening plan per day.
 
-FORMAT
-- Blurb → "Top picks" bullets → optional "Day‑by‑day idea" → "Logistics & tips".
+Follow this EXACT MARKDOWN CONTRACT at all times:
+- Headings (#, ##, ###) and hyphen bullets only ("- ").
+- Bold allowed as **Label:**; no italics; no single-asterisk emphasis.
+- No asterisk bullets, no en/em-dash bullets, no numbered lists, no code fences/backticks.
+- One blank line between sections.
+
+Structure output as:
+## {City}: {tagline}
+{blurb paragraph}
+
+### Top picks
+- **Name:** why · duration · best time · cost (free/$/$$/$$$) · booking? · tip
+
+### Day‑by‑day idea  (only if days provided)
+- Day 1:
+  - Morning: ...
+  - Afternoon: ...
+  - Evening: ...
+
+### Logistics & tips
+- …
 
 OUTPUT RULE
+- Respond with Markdown only, per the contract.
 - Respond immediately with the itinerary; do not say "I'm ready" or ask for the prompt again.
 """).strip()
 
@@ -233,54 +253,23 @@ def generate_suggestions():
 
 
 
-# def get_response_messages(messages):
-#     url = "https://openrouter.ai/api/v1/chat/completions"
-#     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-#     payload = {"model": "google/gemini-2.0-flash-exp:free", "messages": messages, "temperature": 0.7}
-#     max_retries = 100
-#     for attempt in range(max_retries):
-#         r = requests.post(url, headers=headers, json=payload, timeout=60)
-#         if r.status_code == 200:
-#             data = r.json()
-#             return data["choices"][0]["message"]["content"]
-#         if r.status_code == 429:
-#             retry_after = r.headers.get("retry-after")
-#             wait = int(retry_after) if retry_after else (2 ** attempt)
-#             time.sleep(wait); continue
-#         raise RuntimeError(f"{r.status_code} {r.text}")
-#     raise RuntimeError("Rate limited after retries.")
-
-
-def get_response_messages(messages, max_retries=10, base=1.5, cap=20, overall_deadline=180):
+def get_response_messages(messages, max_retries=10):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    # payload = {"model": "openai/gpt-oss-20b:free", "messages": messages, "temperature": 0.7}
     payload = {"model": "google/gemini-2.0-flash-exp:free", "messages": messages, "temperature": 0.7}
 
-    start = time.time()
     for attempt in range(max_retries):
-        r = requests.post(url, headers=headers, json=payload, timeout=(10, 120))
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
         if r.status_code == 200:
             data = r.json()
             return data["choices"][0]["message"]["content"]
-
-        retryable = (r.status_code == 429) or (500 <= r.status_code < 600)
-        if not retryable:
-            raise RuntimeError(f"{r.status_code} {r.text}")
-
-        if time.time() - start > overall_deadline:
-            raise RuntimeError(f"Retry deadline exceeded ({overall_deadline}s). Last: {r.status_code} {r.text}")
-
-        ra = r.headers.get("retry-after")
-        try:
-            wait = float(ra) if ra is not None else base * (2 ** attempt)
-        except ValueError:
-            wait = base * (2 ** attempt)
-        wait = min(cap, wait)
-        jitter = 0.8 + (0.4 * (time.time() % 1))  # simple jitter without importing random
-        time.sleep(wait * jitter)
-
-    raise RuntimeError(f"Exhausted {max_retries} retries without success.")
+        if r.status_code == 429:
+            retry_after = r.headers.get("retry-after")
+            wait = int(retry_after) if retry_after else (2 ** attempt)
+            time.sleep(wait)
+            continue
+        raise RuntimeError(f"{r.status_code} {r.text}")
+    raise RuntimeError("Rate limited after retries. Try a different model or add your own provider key.")
 
 
 def generate_suggestions_text(user_input: str = "", messages: list | None = None) -> str:
@@ -298,7 +287,3 @@ def generate_suggestions_text(user_input: str = "", messages: list | None = None
         {"role": "user", "content": text},
     ]
     return get_response_messages(msgs)
-
-
-# if __name__ == "__main__":
-#     generate_suggestions()
