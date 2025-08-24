@@ -20,6 +20,7 @@ function logoutAll(){ if(USE_LOCAL){ DB.session={userId:null,isAdmin:false}; sav
 function requireUser(){ if(USE_LOCAL){ if(!DB.session.userId) location.href="login.html"; } }
 function requireAdmin(){ if(USE_LOCAL){ if(!DB.session.isAdmin) location.href="admin-login.html"; } }
 function money(n){ return "$"+Number(n).toLocaleString(); }
+function capWords(s){ return String(s||"").split(/\s+/).map(w=> w.split("-").map(p=> p ? (p[0].toUpperCase()+p.slice(1)) : "").join("-")).join(" "); }
 function dateOverlap(a,b){ return !(b.end < a.start || b.start > a.end); }
 function isAvailable(prop,start,end){ const req={start,end}; return !prop.unavailable?.some(r=>dateOverlap(r,req)); }
 function normalizeIsoDate(s){
@@ -31,6 +32,7 @@ function normalizeIsoDate(s){
   const pad = n => String(n).padStart(2,'0');
   return `${y}-${pad(mo)}-${pad(d)}`;
 }
+
 
 // --- Login Page ---
 function initLogin(isAdmin=false){
@@ -179,6 +181,23 @@ function initProfile(){
     if(!userId){ toast("Missing user id", false); return; }
 
     let p = null; // current profile model shared by handlers
+    let propById = {};
+
+    async function loadPropsMap(){
+      try{
+        const r = await fetch(`${API_BASE}/admin/properties`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if(!r.ok) return;
+        const data = await r.json();
+        (data.properties || []).forEach(x=>{
+          if(x && x.property_id){
+            propById[x.property_id] = { type: x.type, location: x.location };
+          }
+        });
+      }catch(e){}
+    }
 
     function setVal(k,v){
       const el = qs(`[data-val='${k}']`);
@@ -195,17 +214,21 @@ function initProfile(){
       const list = qs("#bookings");
       const hist = Array.isArray(profile.bookingHistory) ? profile.bookingHistory : [];
       list.innerHTML = hist.length
-        ? hist.map(b => `
+        ? hist.map(b => {
+            const info = propById[b.propertyId];
+            const title = info ? `${capWords(info.type)} · ${info.location}` : "Property";
+            return `
             <div class="booking-item">
               <div class="left">
-                <div class="name"><strong>Property</strong></div>
+                <div class="name"><strong>${title}</strong></div>
                 <div class="kbd small">${(b.propertyId||"").slice(0,8)}</div>
               </div>
               <div class="right small">
                 ${b.start} → ${b.end}
                 <button class="btn danger small" data-del data-prop="${b.propertyId}" data-start="${b.start}" data-end="${b.end}" style="margin-left:8px">Delete</button>
               </div>
-            </div>`).join("")
+            </div>`;
+          }).join("")
         : `<div class="small">No bookings yet.</div>`;
     }
 
@@ -262,6 +285,7 @@ function initProfile(){
 
     (async ()=>{
       try{
+        await loadPropsMap();  // ensure propById is ready for renderProfile
         const r = await fetch(`${API_BASE}/profile`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -428,7 +452,7 @@ function initSearch(){
           <div>
             <div class="kbd small">${p.id.slice(0,8)}</div>
             <div class="row" style="margin-top:6px">
-              <strong>${p.type} in ${p.location}</strong>
+              <strong>${capWords(p.type)} in ${p.location}</strong>
             </div>
             <div class="small">${money(p.pricePerNight)}/night · ${p.guestCapacity} guests</div>
             <div class="pills" style="margin-top:8px">${p.tags.map(t=>`<span class="pill">${t}</span>`).join("")}</div>
@@ -550,7 +574,7 @@ function initSearch(){
     qs("#reset")?.addEventListener("click", ()=>{
       qsa(".filter").forEach(f=>{ if(f.type==="checkbox") f.checked=false; else f.value=""; });
       msFeatures.clear(); msTags.clear();
-      const title = qs("#list-title"); if(title) title.textContent = "Recommended for you";
+      const title = qs("#list-title"); if(title) title.textContent = "Recommended for you (Top 20)";
       renderList(recs);
     });
 
@@ -794,11 +818,16 @@ function initAdmin(){
         if(next && next.classList.contains("subrow")){ next.remove(); return; }
         const id = tr.getAttribute("data-u");
         const u = list.find(x=>x.id===id) || { bookingHistory: [] };
-        const rows = (u.bookingHistory||[]).map(b => `
-          <div class="booking-item">
-            <div class="left"><div class="name"><strong>${b.propertyName || ""}</strong></div><div class="kbd small">${(b.propertyId||"").slice(0,8)}</div></div>
-            <div class="right small">${b.start} → ${b.end}</div>
-          </div>`).join("") || `<div class="small">No bookings.</div>`;
+        const rows = (u.bookingHistory||[]).map(b => {
+          const pname = String(b.propertyName || "");
+          const i = pname.indexOf(" in ");
+          const pretty = i >= 0 ? capWords(pname.slice(0, i)) + pname.slice(i) : capWords(pname);
+          return `
+            <div class="booking-item">
+              <div class="left"><div class="name"><strong>${pretty}</strong></div><div class="kbd small">${(b.propertyId||"").slice(0,8)}</div></div>
+              <div class="right small">${b.start} → ${b.end}</div>
+            </div>`;
+        }).join("") || `<div class="small">No bookings.</div>`;
         const tr2 = document.createElement("tr");
         tr2.className = "subrow";
         tr2.innerHTML = `<td colspan="4"><div style="padding:8px 6px">${rows}</div></td>`;
@@ -807,19 +836,22 @@ function initAdmin(){
     });
   }
 
+
   // default: show users pane and load
   qs("[data-tab='users']")?.addEventListener("click", fetchUsers);
   qs("[data-tab='users']")?.click();
 
 
   // Properties
-    // Properties (backend mode)
   function optionsHtml(arr, selected){
     return arr.map(v=>`<option value="${v}" ${v===selected?"selected":""}>${v}</option>`).join("");
   }
   function checkListHtml(arr, selected){
     const sel = new Set(selected||[]);
     return arr.map(v=>`<label class="option"><input type="checkbox" value="${v}" ${sel.has(v)?"checked":""}><span>${v}</span></label>`).join("");
+  }
+  function capWords(s){
+    return String(s||"").split(/\s+/).map(w=> w.split("-").map(p=> p ? (p[0].toUpperCase()+p.slice(1)) : "").join("-")).join(" ");
   }
   const LOCATIONS_ADM = ["Vancouver","Toronto","Montreal","Calgary","Edmonton","Winnipeg","Halifax","Victoria","Quebec City","Fredericton"];
   const TYPES_ADM = ["cabin","apartment","cottage","loft","villa","tiny house","studio"];
@@ -844,8 +876,9 @@ function initAdmin(){
       <div class="card pad">
         <div class="flex-between">
           <div>
-            <strong>${p.type}</strong> · ${p.location}
-                        <div class="small">${money(p.price_per_night)}/night · ${p.guest_capacity} guests</div>
+            <div class="kbd small">${(p.property_id||"").slice(0,8)}</div>
+            <strong>${capWords(p.type)}</strong> · ${p.location}
+            <div class="small">${money(p.price_per_night)}/night · ${p.guest_capacity} guests</div>
             <div class="pills" style="margin-top:6px">${(p.tags||[]).map(t=>`<span class="pill">${t}</span>`).join("")}</div>
           </div>
           <div class="buttons">

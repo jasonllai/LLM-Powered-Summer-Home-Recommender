@@ -140,7 +140,7 @@ footer{padding:32px 0;color:#64748b}
 .menu .option input{ margin-left:12px }
 
 /* Search toolbar alignment */
-.toolbar .field.actions{ align-self:end }
+.toolbar .field.actions{ align-self:flex-end }
 @media (max-width:900px){
   .toolbar .field.actions{ align-self:auto }
 }
@@ -166,7 +166,7 @@ footer{padding:32px 0;color:#64748b}
 }
 
 /* Admin props card buttons stacked */
-.card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+#props-list .card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
 
 /* Multi-select dropdown used in admin editor */
 .multi { position: relative; }
@@ -175,7 +175,7 @@ footer{padding:32px 0;color:#64748b}
 
 
 /* Admin props: vertical buttons */
-.card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+#props-list .card .buttons { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
 
 /* Multi-select dropdown (single-column list) */
 .multi { position: relative; }
@@ -244,7 +244,7 @@ footer{padding:32px 0;color:#64748b}
 }
 
 /* Buttons on property cards stacked top/bottom on the right */
-.card .buttons{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+#props-list .card .buttons{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
 
 @media (max-width: 640px){
   .multi .menu.list{ width: 92vw !important; left: 0; right: auto; }

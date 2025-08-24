@@ -218,7 +218,6 @@ def generate_properties(number_of_properties):
     append_properties_to_file(props)
     print(f"Successfully generated {num_properties} properties!")
 
-generate_properties(5)
 
 
 def generate_suggestions():
