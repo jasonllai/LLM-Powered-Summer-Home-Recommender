@@ -1067,28 +1067,52 @@ function initAdmin(){
     });
   })();
 
-  // Generate properties (simulated LLM)
-  function generateProperties(n){
-    const locations = ["Whistler, BC","Niagara-on-the-Lake, ON","Banff, AB","Cavendish, PEI","Lunenburg, NS","Wasaga Beach, ON","Tofino, BC","Jasper, AB"];
-    const types = ["Beach House","Lake Cabin","Country Cottage","Forest Chalet","City Loft"];
-    const features = ["Hot tub","Sauna","BBQ","Fire pit","Bikes","Canoe","Dock","Ocean view","Mountain view","Pet friendly"];
-    const tags = ["beach","lake","forest","mountain","quiet","family","luxury","cozy"];
-    const arr=[];
-    for(let i=0;i<n;i++){
-      const loc = locations[Math.floor(Math.random()*locations.length)];
-      const typ = types[Math.floor(Math.random()*types.length)];
-      const price = Math.floor(120 + Math.random()*300);
-      const feat = features.sort(()=>0.5-Math.random()).slice(0,3+Math.floor(Math.random()*3));
-      const tgs = tags.sort(()=>0.5-Math.random()).slice(0,2+Math.floor(Math.random()*2));
-      const cap = 2 + Math.floor(Math.random()*7);
-      arr.push({ id:rnd(), location:loc, type:typ, pricePerNight:price, features:feat, tags:tgs, guestCapacity:cap, unavailable:[] });
+  // Generate properties using LLM
+  qs("#gen-btn")?.addEventListener("click", async ()=>{
+    const inputEl = qs("#gen-n");
+    const err = qs("#gen-err");
+    const status = qs("#gen-status");
+    err?.classList.add("hidden"); if(status) status.textContent = "";
+
+    const raw = inputEl?.value || "";
+    const n = parseInt(raw, 10);
+    if(!Number.isInteger(n) || n < 1){
+      if(err){ err.textContent = "Enter a positive integer (>= 1)."; err.classList.remove("hidden"); }
+      return;
     }
-    return arr;
-  }
-  qs("#gen-btn")?.addEventListener("click", ()=>{
-    const n = Math.max(1, Math.min(50, Number(qs("#gen-n").value || 5)));
-    const list = generateProperties(n);
-    DB.properties = [...list, ...DB.properties]; saveDb(DB); renderProps(); toast(`Successfully generated ${n} properties.`, true);
+
+    const btn = qs("#gen-btn");
+    btn.disabled = true; if(inputEl) inputEl.disabled = true;
+
+    let dots = 0, tmr = null;
+    if(status){
+      status.textContent = "Generating properties...";
+      tmr = setInterval(()=>{ dots = (dots+1)%4; status.textContent = "Generating properties" + ".".repeat(dots); }, 700);
+    }
+
+    try{
+      if(!USE_LOCAL){
+        const r = await fetch(`${API_BASE}/admin/properties/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ n })
+        });
+        if(!r.ok){
+          const data = await r.json().catch(()=> ({}));
+          throw new Error(data?.error || "Generation failed");
+        }
+      }else{
+        const list = generateProperties(n);
+        DB.properties = [...list, ...DB.properties]; saveDb(DB);
+      }
+      if(status) status.textContent = `Successfully generated ${n} properties!`;
+      fetchProps();
+    }catch(e){
+      if(status) status.textContent = e?.message || "Generation failed";
+    }finally{
+      if(tmr) clearInterval(tmr);
+      btn.disabled = false; if(inputEl) inputEl.disabled = false;
+    }
   });
 }
 

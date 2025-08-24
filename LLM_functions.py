@@ -47,12 +47,26 @@ STRICT SCHEMA
     "unavailable_dates": ["empty list"]
 }
 
+CONSISTENCY RULES
+- Features and tags MUST be coherent; avoid mutually exclusive geography or vibe.
+- Never combine these pairs in the same object:
+  - "remote" with "city" or "nightlife" or "business-travel"
+  - "beach" or "ocean" or "oceanfront" with "mountains" or "ski-in/ski-out" or "lake" or "river"
+  - "lake" with "oceanfront" or "beach" or "riverfront"
+  - "river" with "oceanfront" or "beach"
+  - "historic" with "modern"
+- If a waterfront feature is chosen, align tags accordingly:
+  - "oceanfront"/"beach access" -> ocean/beach tags only (no lake/river/mountain)
+  - "lakefront" -> lake tags only (no ocean/beach/river/mountain)
+  - "riverfront" -> river tags only (no ocean/beach/lake/mountain)
+
 OUTPUT RULES
 - Output ONLY valid JSON. No explanations.
 - Top-level value MUST be a JSON array.
 - No trailing commas.
 BEGIN JSON
 """).strip())
+
 
 
 CHAT_PROMPT = Template(dedent("""
@@ -88,6 +102,8 @@ TONE GUARDRAILS
 OUTPUT RULE
 - Respond immediately with the itinerary; do not say "I'm ready" or ask for a prompt again.
 """).strip())
+
+
 
 SYSTEM_PROMPT = dedent("""
 You are TripBuddy, a helpful travel AI.
@@ -189,12 +205,8 @@ def append_properties_to_file(props: list, path: str = "data/Properties.json") -
     return len(to_add)
 
 
-def generate_properties():
-    inp = input("The number of properties you want to generate: ")
-    if not inp.isdigit():
-        print("Please enter a valid number.")
-        return
-    num_properties = int(inp)
+def generate_properties(number_of_properties):
+    num_properties = int(number_of_properties)
     print("Generating properties...")
     data_prompt = DATA_PROMPT.substitute(n=num_properties,
                                          location_pool=", ".join(location_pool),
@@ -205,6 +217,8 @@ def generate_properties():
     props = extract_json_array(response)
     append_properties_to_file(props)
     print(f"Successfully generated {num_properties} properties!")
+
+generate_properties(5)
 
 
 def generate_suggestions():
@@ -238,7 +252,7 @@ def generate_suggestions():
 #     raise RuntimeError("Rate limited after retries.")
 
 
-def get_response_messages(messages, max_retries=100, base=1.5, cap=20, overall_deadline=180):
+def get_response_messages(messages, max_retries=10, base=1.5, cap=20, overall_deadline=180):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     # payload = {"model": "openai/gpt-oss-20b:free", "messages": messages, "temperature": 0.7}

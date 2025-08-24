@@ -64,10 +64,14 @@
         <div data-pane="gen" class="card pad hidden">
           <h2>Generate properties using LLM</h2>
           <div class="row" style="align-items:flex-end;margin-top:8px">
-            <div class="field"><label>Number of properties</label><input id="gen-n" type="number" value="5" min="1" max="50"></div>
+            <div class="field"><label>Number of properties</label>
+              <input id="gen-n" type="number" value="5" min="1" max="50">
+              <div id="gen-err" class="error hidden"></div>
+            </div>
             <button id="gen-btn" class="btn" type="button">Generate</button>
           </div>
-          <p class="small" style="margin-top:6px">(Simulated generation in this demo; connect your backend LLM later.)</p>
+          <p class="small" style="margin-top:6px">This may take up to a minute.</p>
+          <div id="gen-status" class="small" style="margin-top:6px"></div>
         </div>
       </div>
     </div>
