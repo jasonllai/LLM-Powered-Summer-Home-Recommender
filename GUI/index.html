@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="assets/style.css" />
   <script defer src="assets/app.js"></script>
 </head>
-<body>
+<body onload="SummerStay.initHome()">
   <header class="header">
     <div class="header-inner">
       <div class="brand">SummerStay</div>
@@ -28,7 +28,7 @@
         </div>
       </div>
       <div class="card pad">
-        <div style="aspect-ratio:16/9;border-radius:12px;background:linear-gradient(135deg,#e0f2fe,#f0fdf4,#fffbeb)"></div>
+        <div id="hero" class="hero"></div>
         <p class="small" style="margin-top:8px">Browse curated retreats across Canada. Book in a few clicks.</p>
       </div>
     </div>

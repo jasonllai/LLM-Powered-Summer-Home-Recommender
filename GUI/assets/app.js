@@ -34,6 +34,37 @@ function normalizeIsoDate(s){
 }
 
 
+// --- Home ---
+function initHome(){
+  const el = document.getElementById("hero");
+  if(!el) return;
+
+  const imgs = [
+    "assets/img/img1.png",
+    "assets/img/img2.png",
+    "assets/img/img3.png",
+    "assets/img/img4.png",
+    "assets/img/img5.png"
+  ];
+
+  const nodes = imgs.map(src=>{
+    const img = new Image();
+    img.src = src; img.alt = "SummerStay";
+    el.appendChild(img);
+    return img;
+  });
+
+  let i = 0;
+  if(nodes.length){ nodes[0].classList.add("active"); }
+  setInterval(()=>{
+    if(!nodes.length) return;
+    const cur = nodes[i]; i = (i+1) % nodes.length; const nxt = nodes[i];
+    if(cur) cur.classList.remove("active");
+    if(nxt) nxt.classList.add("active");
+  }, 5000);
+}
+
+
 // --- Login Page ---
 function initLogin(isAdmin=false){
   const form = qs("#login-form"); const err = qs("#login-error");
@@ -1167,4 +1198,4 @@ function initAdmin(){
 }
 
 // Expose initializers globally
-window.SummerStay = { initLogin, initRegister, initDashboard, initProfile, initSearch, initAdmin, logoutAll };
+window.SummerStay = { initLogin, initRegister, initDashboard, initProfile, initSearch, initAdmin, logoutAll, initHome };
