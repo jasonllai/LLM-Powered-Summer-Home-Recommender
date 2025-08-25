@@ -3,7 +3,7 @@ import json
 import datetime
 from flask import Flask, request, jsonify
 from Recommender_Logic import ListingRecommender
-from Filter_And_Sort import filter_properties, sort_properties_asjson
+from filter import filter_properties, sort_properties_asjson
 from LLM_functions import location_pool, type_pool, feature_pool, tag_pool, generate_properties
 from rental_management import create_user_profile, view_user_profile, edit_user_profile, create_booking, delete_booking, delete_profile, validate_admin, validate_user, update_property, delete_property, view_properties, add_properties
 
