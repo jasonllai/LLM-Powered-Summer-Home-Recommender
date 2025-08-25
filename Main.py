@@ -311,15 +311,20 @@ def main():
 
                                                 if choice_5 == "b":
                                                     booking_index = get_int_input("Please enter the index of the property you want to book: ")
-                                                    booking_user_id = curr_user.user_id
-                                                    booking_prop_id = filtered_properties_df.loc[booking_index]["property_id"]
-                                                    booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
-                                                    booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
-                                                    if create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date):
-                                                        booking_status = False
-                                                        filter_status = False
+
+                                                    if booking_index in filtered_properties_df.index:
+                                                        booking_user_id = curr_user.user_id
+                                                        booking_prop_id = filtered_properties_df.loc[booking_index]["property_id"]
+                                                        booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
+                                                        booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
+                                                        if create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date):
+                                                            booking_status = False
+                                                            filter_status = False
+                                                        else:
+                                                            booking_status = False
+                                                    
                                                     else:
-                                                        booking_status = False
+                                                        print("Invalid index!")
 
                                                 elif choice_5 == "r":
                                                     booking_status = False
@@ -329,12 +334,6 @@ def main():
 
                                         else:
                                             print("Invalid choice!")
-                                        
-                                        # filter_features = [feature.strip() for feature in filter_features.split(",") if feature.strip()]
-                                        # filter_features = [feature for feature in filter_features if feature in feature_pool]
-
-                                        # filter_tags = [tag.strip() for tag in filter_tags.split(",") if tag.strip()]
-                                        # filter_tags = [tag for tag in filter_tags if tag in tag_pool]
 
 
                                 elif choice_4 == "2":
@@ -350,12 +349,17 @@ def main():
 
                                     while booking_status:
                                         booking_index = get_int_input("Please enter the index of the property you want to book: ")
-                                        booking_user_id = curr_user.user_id
-                                        booking_prop_id = recommended_properties_df.loc[booking_index]["property_id"]
-                                        booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
-                                        booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
-                                        create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date)
-                                        booking_status = False
+
+                                        if booking_index in recommended_properties_df.index:
+                                            booking_user_id = curr_user.user_id
+                                            booking_prop_id = recommended_properties_df.loc[booking_index]["property_id"]
+                                            booking_start_date = input("Please enter the start date of your booking (yyyy-mm-dd): ")
+                                            booking_end_date = input("Please enter the end date of your booking (yyyy-mm-dd): ")
+                                            create_booking(booking_user_id, booking_prop_id, booking_start_date, booking_end_date)
+                                            booking_status = False
+
+                                        else:
+                                            print("Invalid index!")
 
 
                                 elif choice_4 == "4":
@@ -367,9 +371,9 @@ def main():
 
                         
                         elif choice_3 == "b":
-                            # Need to print current booking list
                             booking = view_user_profile(curr_user.user_id)
                             print(pd.DataFrame(booking["booking_history"]))
+
 
                         elif choice_3 == "d":
                             print("Are you sure you want to delete your current user profile?")
@@ -433,7 +437,7 @@ def main():
                 print("Welcome administrator!")
                 print("[1] Sign in")
                 print("[2] Exit")
-                choice_6 = input()
+                choice_6 = input("Please enter [1]/[2]: ")
 
                 if choice_6 == "1":
                     admin_id_input = input("Please enter your username: ")
@@ -469,12 +473,26 @@ def main():
 
                         elif choice_7 == "a":
                             print("\n===Adding A New Property ===")
+                            print("Please enter the location from the list below: ")
+                            print(location_pool)
                             prop_location = get_string_input("Location: ", location_pool)
+
+                            print("Please enter the property type from the list below: ")
+                            print(type_pool)
                             prop_type = get_string_input("Property type: ", type_pool)
-                            prop_price = get_int_input("Price per night ($): ")
-                            prop_features = get_string_list_input("Features (please separate features by comma): ", feature_pool)
-                            prop_tags = get_string_list_input("Tags (please separate tags by comma): ", tag_pool)
-                            prop_guest_capacity = get_int_input("Guest capacity: ")
+
+                            prop_price = get_int_input("Price per night (integer): ")
+
+                            print("Please enter the features from the list below: ")
+                            print("If the property has multiple features, please separate each feature by comma.")
+                            print(feature_pool)
+                            prop_features = get_string_list_input("Features: ", feature_pool)
+
+                            print("Please enter the tags from the list below: ")
+                            print("If the property has multiple tags, please separate each tag by comma.")
+                            prop_tags = get_string_list_input("Tags: ", tag_pool)
+
+                            prop_guest_capacity = get_int_input("Guest capacity (integer): ")
 
                             add_properties(prop_location, prop_type, prop_price, prop_features, prop_tags, prop_guest_capacity)
 
@@ -490,87 +508,97 @@ def main():
                                 print(properties_df.drop(columns = "property_id"))
 
                                 edit_prop_index = get_int_input("Enter the index of the property you want to update: ")
-                                edit_prop_id = properties_df.loc[edit_prop_index]["property_id"]
 
-                                edit_prop = next((p for p in property_obj_list if p.property_id == edit_prop_id), None)
+                                if edit_prop_index in properties_df.index:
+                                    edit_prop_id = properties_df.loc[edit_prop_index]["property_id"]
+                                    edit_prop = next((p for p in property_obj_list if p.property_id == edit_prop_id), None)
+                                
+                                    new_property_id = edit_prop.property_id
+                                    new_location = edit_prop.location
+                                    new_p_type = edit_prop.p_type
+                                    new_price = edit_prop.price_per_night
+                                    new_features = edit_prop.features
+                                    new_tags = edit_prop.tags
+                                    new_guest_capacity = edit_prop.guest_capacity
+                                    new_unavailable_dates = edit_prop.unavailable_dates
 
-                                new_property_id = edit_prop.property_id
-                                new_location = edit_prop.location
-                                new_p_type = edit_prop.p_type
-                                new_price = edit_prop.price_per_night
-                                new_features = edit_prop.features
-                                new_tags = edit_prop.tags
-                                new_guest_capacity = edit_prop.guest_capacity
-                                new_unavailable_dates = edit_prop.unavailable_dates
+                                    print("\nWhat would you like to edit?")
+                                    print("[1] Location")
+                                    print("[2] Property type")
+                                    print("[3] Price per night")
+                                    print("[4] Features")
+                                    print("[5] Tags")
+                                    print("[6] Guest capacity")
+                                    print("[7] Exit")
 
-                                print("\nWhat would you like to edit?")
-                                print("[1] Location")
-                                print("[2] Property type")
-                                print("[3] Price per night")
-                                print("[4] Features")
-                                print("[5] Tags")
-                                print("[6] Guest capacity")
-                                print("[7] Exit")
+                                    prop_edit_choice = input("Enter your choice (1-7): ").strip()
 
-                                prop_edit_choice = input("Enter your choice (1-7): ").strip()
+                                    if prop_edit_choice == "1":
+                                        print("Please enter the new location from the list below: ")
+                                        print(location_pool)
+                                        new_location = get_string_input("New location: ", location_pool)
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
+            
+                                    elif prop_edit_choice == "2":
+                                        print("Please enter the new property type from the list below: ")
+                                        print(type_pool)
+                                        new_p_type = get_string_input("New property type: ", type_pool)
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
+                                        
+                                    elif prop_edit_choice == "3":
+                                        new_price = get_int_input("New price per night (integer): ")
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
 
-                                if prop_edit_choice == "1":
-                                    print("Please enter the new location from the list below: ")
-                                    print(location_pool)
-                                    new_location = get_string_input("New location: ", location_pool)
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
-           
-                                elif prop_edit_choice == "2":
-                                    print("Please enter the new property type from the list below: ")
-                                    print(type_pool)
-                                    new_p_type = get_string_input("New property type: ", type_pool)
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
-                                    
-                                elif prop_edit_choice == "3":
-                                    new_price = get_int_input("New price per night (integer): ")
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
+                                    elif prop_edit_choice == "4":
+                                        print("Please enter the new features from the list below: ")
+                                        print("If the property has multiple features, please separate each feature by comma.")
+                                        print(feature_pool)
+                                        new_features = get_string_list_input("New property features: ", feature_pool)
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
 
-                                elif prop_edit_choice == "4":
-                                    print("Please enter the new featurese from the list below: ")
-                                    print("If the property has multiple features, please separate each feature by comma.")
-                                    print(feature_pool)
-                                    new_features = get_string_list_input("New property features: ", feature_pool)
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
+                                    elif prop_edit_choice == "5":
+                                        print("Please enter the new tags from the list below: ")
+                                        print("If the property has multiple tags, please separate each tag by comma.")
+                                        print(tag_pool)
+                                        new_tags = get_string_list_input("New property tags: ", tag_pool)
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
 
-                                elif prop_edit_choice == "5":
-                                    print("Please enter the new tags from the list below: ")
-                                    print("If the property has multiple tags, please separate each tag by comma.")
-                                    print(tag_pool)
-                                    new_tags = get_string_list_input("New property tags: ", tag_pool)
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
+                                    elif prop_edit_choice == "6":
+                                        new_guest_capacity = get_int_input("New guest capacity (integer): ")
+                                        new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
+                                        update_property(new_prop_dict)
+                                                
+                                    elif prop_edit_choice == "7":
+                                        print("Edit session completed!")
+                                        break
 
-                                elif prop_edit_choice == "6":
-                                    new_guest_capacity = get_int_input("New guest capacity (integer): ")
-                                    new_prop_dict = Property(new_property_id, new_location, new_p_type, new_price, new_features, new_tags, new_guest_capacity, new_unavailable_dates).to_dict()
-                                    update_property(new_prop_dict)
-                                            
-                                elif prop_edit_choice == "7":
-                                    print("Edit session completed!")
-                                    break
+                                    else:
+                                        print("Invalid choice!")
 
                                 else:
-                                    print("Invalid choice!")
+                                    print("Invalid index!")
 
 
                         elif choice_7 == "d":
-                            pd.set_option("display.max_colwidth", 20)
-                            properties_dict = view_properties()
-                            properties_df = pd.DataFrame(properties_dict)
-                            print(properties_df.drop(columns = "property_id"))
-                            delete_prop_index = get_int_input("Enter the index of the property you want to delete: ")
-                            delete_prop_id = properties_df.loc[delete_prop_index]["property_id"]
+                            while True:
+                                pd.set_option("display.max_colwidth", 20)
+                                properties_dict = view_properties()
+                                properties_df = pd.DataFrame(properties_dict)
+                                print(properties_df.drop(columns = "property_id"))
+                                delete_prop_index = get_int_input("Enter the index of the property you want to delete: ")
 
-                            delete_property(delete_prop_id)
+                                if delete_prop_index in properties_df.index:
+                                    delete_prop_id = properties_df.loc[delete_prop_index]["property_id"]
+                                    delete_property(delete_prop_id)
+
+                                else:
+                                    print("Invalid index!")
+
 
                         elif choice_7 == "g":
                             n = get_int_input("Enter the number of properties you want to generate: ")
@@ -586,6 +614,7 @@ def main():
                 elif choice_6 == "2":
                     print("Thanks for using!")
                     is_admin = False
+                    app_status = False
                     
                 else:
                     print("Invalid choice!")
