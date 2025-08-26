@@ -1,7 +1,7 @@
 import json 
 import pandas as pd
 from rental_management import load_data_from_json
-from difflib import get_close_matches, SequenceMatcher
+
 
 
 class ListingRecommender():
@@ -14,6 +14,11 @@ class ListingRecommender():
                     "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
                     "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"]
 
+        '''
+        OpenAI. (2025). ChatGPT (Aug 18 version) [Large language model]. https://chat.openai.com/
+        The tags pool and the preferred enviorinments that the user can choose are provided to ChatGPT and the correlation table is obtained.
+
+        '''
         correlation_table = {
             "beach": [0.1,0.2,0.3,1.0,0.3,0.2,0.2,0.8,0.1,0.3,0.2,0.2,0.1,0.1,0.2,0.2,0.2,0.1,0.1,0.1,0.4,0.1,0.5,0.3,0.5,0.3,0.2,0.2,0.1,0.2],
             "lake": [0.1,0.1,0.1,0.2,0.2,1.0,0.7,0.3,0.6,0.2,0.3,0.2,0.7,0.6,0.1,0.3,0.4,0.1,0.1,0.1,0.2,0.2,0.1,0.2,0.2,0.1,0.2,0.4,0.3,0.3],
@@ -36,12 +41,12 @@ class ListingRecommender():
         # Making sure each row has the same length as our tags_pool. Our rows in correlation_table are shorter than tags_pool, so we pad them with zeros. Truncation is just a safeguard.
         # So actually only row + [0.0] * (len(tags_pool)-len(row)) is running
             if tag in corr_df.index:
-                r = (row + [0.0]*(len(tags_pool)-len(row)))[:len(tags_pool)]
-                corr_df.loc[tag] = r
+                row_value = (row + [0.0]*(len(tags_pool)-len(row)))[:len(tags_pool)]
+                corr_df.loc[tag] = row_value
 
         # Set self-correlation = 1 for every tag
-        for t in tags_pool:
-            corr_df.loc[t, t] = 1.0
+        for every_tag in tags_pool:
+            corr_df.loc[every_tag, every_tag] = 1.0
         self.corr_df = corr_df
 
     def calculate_tag_score(self, active_user, property_tags):
@@ -63,12 +68,12 @@ class ListingRecommender():
         for property_tag in property_tags:
             normalized_property_tag = lt.strip().lower()
             if normalized_preferred in self.corr_df.index and normalized_property_tag in self.corr_df.columns:
-                v = float(self.corr_df.loc[normalized_preferred, normalized_property_tag])
-                if v > best_correlation:
-                    best_correlation = v # Here we keep the maximum correlation score by listing
+                normalized_result = float(self.corr_df.loc[normalized_preferred, normalized_property_tag])
+                if normalized_result > best_correlation:
+                    best_correlation = normalized_result # Here we keep the maximum correlation score by listing
         # Returning the tag_score            
         return round(best_correlation, 3)
-
+    
     def calculate_budget_score(self, active_user, price):
         price_score = 0
         budget = active_user.get("budget_range")
