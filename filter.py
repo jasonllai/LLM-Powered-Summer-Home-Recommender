@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from rental_management import Property, validate_date, load_data_from_json
 
 # function that filters all properties from json file according to user inputted attributes and returns a subset of the original 
-# properties that meets the filtering criteria as a list of Properties in list ofdictionary format
+# properties that meets the filtering criteria fromatted as a list of dictionaries
 def filter_properties(group_size=None, min_price=None, max_price=None, features=None, tags=None, prop_type=None, location=None, 
                       start_date=None, end_date=None):
     # reads properties from json as list of dictionaries
