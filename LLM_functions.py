@@ -15,6 +15,7 @@ if not API_KEY:
 
 
 
+# ---- Vocab pools ----
 # Canonical property "type" values used throughout the app (UI + data gen)
 type_pool = ["cabin", "apartment", "cottage", "loft", "villa", "tiny house", "studio"]
 
@@ -40,6 +41,7 @@ tag_pool = ["mountains", "remote", "adventure", "beach", "city", "lake",
 
 
 
+# ---- Prompts ----
 # Template that instructs the LLM how to emit a batch of property objects (pure JSON)
 DATA_PROMPT = Template(dedent("""
 You are a data generator.
@@ -162,6 +164,7 @@ OUTPUT RULE
 
 
 
+# ---- LLM client ----
 # Low‑level single‑turn call to OpenRouter (used by property generation and CLI demo)
 def get_response(prompt):
     url = "https://openrouter.ai/api/v1/chat/completions"  # OpenRouter chat endpoint
@@ -212,6 +215,7 @@ def get_response_messages(messages, max_retries=10):
 
 
 
+# ---- Helpers ----
 # Extract the outermost JSON array from the model's text (tolerates fenced blocks)
 def extract_json_array(text: str) -> list:
     # strip code fences
@@ -257,6 +261,8 @@ def append_properties_to_file(props: list, path: str = "data/Properties.json") -
     return len(to_add)
 
 
+
+# ---- Features ----
 # Ask the LLM to synthesize n property records and persist unique ones
 def generate_properties(number_of_properties):
     num_properties = int(number_of_properties)

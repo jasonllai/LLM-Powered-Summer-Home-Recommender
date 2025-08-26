@@ -9,12 +9,16 @@ const ASSIST_API = "http://127.0.0.1:5050";
 function rnd(){ return (self.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)); }
 
 // --- Helpers ---
+// Query one element within an optional root (shorthand for document.querySelector)
 function qs(sel,root=document){ return root.querySelector(sel); }
+// Query a NodeList as an array (forEach/map friendly)
 function qsa(sel,root=document){ return Array.from(root.querySelectorAll(sel)); }
+// Toast helper: show message briefly; pass ok=false for red variant
 function toast(msg, ok=true){ const el=qs("#toast"); if(!el) return;
   el.textContent = msg; el.classList.remove("hidden","err"); if(!ok) el.classList.add("err");
   el.classList.remove("hidden"); setTimeout(()=> el.classList.add("hidden"), 2600);
 }
+// Read a single URL param by name
 function urlParam(key){ const u=new URL(location.href); return u.searchParams.get(key); }
 function logoutAll(){ if(USE_LOCAL){ DB.session={userId:null,isAdmin:false}; saveDb(DB); } location.href="index.html"; }
 function requireUser(){ if(USE_LOCAL){ if(!DB.session.userId) location.href="login.html"; } }
@@ -35,10 +39,12 @@ function normalizeIsoDate(s){
 
 
 // --- Home ---
+// Home hero: cross‑fade through local images every 5s
 function initHome(){
   const el = document.getElementById("hero");
   if(!el) return;
 
+  // Paths are relative to GUI/index.html. Move images here if you change hosting root.
   const imgs = [
     "assets/img/img1.png",
     "assets/img/img2.png",
@@ -54,6 +60,7 @@ function initHome(){
     return img;
   });
 
+  // Toggle .active to drive CSS opacity/scale transition
   let i = 0;
   if(nodes.length){ nodes[0].classList.add("active"); }
   setInterval(()=>{
@@ -66,6 +73,7 @@ function initHome(){
 
 
 // --- Login Page ---
+// Login flow: minimal client validation, then POST to /login or /admin/login
 function initLogin(isAdmin=false){
   const form = qs("#login-form"); const err = qs("#login-error");
   const prevErr = urlParam("error"); if(prevErr) { err.textContent = isAdmin ? "Admin ID or password is incorrect, please try again." : "User ID or password is incorrect, please try again."; err.classList.remove("hidden"); }
@@ -74,11 +82,12 @@ function initLogin(isAdmin=false){
     const userid = qs("[name=userid]").value.trim();
     const password = qs("[name=password]").value;
 
-    // per-field required prompts (only present on admin page)
+    // Show field‑level prompts only on admin page
     const errId = qs("#err-admin-id");
     const errPw = qs("#err-admin-pass");
     errId?.classList.add("hidden"); errPw?.classList.add("hidden"); err?.classList.add("hidden");
 
+    // Block submission when required fields are empty
     if(isAdmin){
       if(!userid){ if(errId){ errId.textContent = "Admin ID is required."; errId.classList.remove("hidden"); } return; }
       if(!password){ if(errPw){ errPw.textContent = "Password is required."; errPw.classList.remove("hidden"); } return; }
@@ -86,6 +95,7 @@ function initLogin(isAdmin=false){
       if(!userid || !password) return;
     }
 
+    // Backend mode: POST credentials; on success, stash session id and redirect
     if(!USE_LOCAL){
       try{
         const endpoint = isAdmin ? "/admin/login" : "/login";
@@ -214,6 +224,7 @@ function initProfile(){
     let p = null; // current profile model shared by handlers
     let propById = {};
 
+    // Load a {property_id: {type,location}} map to label bookings nicely
     async function loadPropsMap(){
       try{
         const r = await fetch(`${API_BASE}/admin/properties`, {
@@ -235,6 +246,7 @@ function initProfile(){
       if(el) el.textContent = (v ?? "");
     }
 
+    // Render the profile pane and booking history (Type · Location + 8‑char id)
     function renderProfile(profile){
       setVal("id", profile.id);
       setVal("name", profile.name);
@@ -474,6 +486,7 @@ function initSearch(){
   const msFeatures = buildMulti("#btn-features", "#dd-features", features, "Any features");
   const msTags = buildMulti("#btn-tags", "#dd-tags", tags, "Any tags");
 
+  // Render property cards; name is "Type in Location" with price and tags
   function renderList(list){
     const wrap = qs("#results"); if(!wrap) return;
     qs("#count").textContent = list.length;
@@ -518,7 +531,7 @@ function initSearch(){
     });
 
 
-    // filter logic
+    // Collect current filter values; numbers and empty arrays are normalized later
     function buildFilters(){
       return {
         start: qs("#f-start").value,
@@ -602,6 +615,7 @@ function initSearch(){
     }
     
     qs("#search")?.addEventListener("click", runSearch);
+    // Reset: clear inputs, multiselects, restore title, re‑render recommended list
     qs("#reset")?.addEventListener("click", ()=>{
       qsa(".filter").forEach(f=>{ if(f.type==="checkbox") f.checked=false; else f.value=""; });
       msFeatures.clear(); msTags.clear();
@@ -707,37 +721,39 @@ function initSearch(){
 
   const thread = [];
 
+  // Convert strict Markdown (headings + hyphen bullets) to lightweight HTML
   function renderRich(text){
     const lines = String(text||"").split(/\r?\n/);
     let html = "";
     let depth = 0;
-  
+
+    // Manage nested <ul> stacks based on 2‑space indentation
     const open = (n)=>{ for(let i=0;i<n;i++){ html += `<ul class="ai-list">`; depth++; } };
     const close = (n)=>{ for(let i=0;i<n;i++){ html += `</ul>`; depth--; } };
     const closeAll = ()=>{ if(depth>0) close(depth); };
-  
+
     for(const raw of lines){
       const line = raw.replace(/\u00A0/g," ").trimEnd();
       if(!line.trim()){ continue; }
-  
-      // Headings: #, ##, ### …
+
+      // Headings: # / ## / ### → styled block titles
       const h = line.match(/^#{1,6}\s+(.*)$/);
       if(h){ closeAll(); html += `<div class="ai-h">${escapeHtml(h[1])}</div>`; continue; }
-  
-      // Hyphen bullets with nesting by indentation (2 spaces per level)
+
+      // Bullets: "- " only; indent by 2 spaces per level
       const b = line.match(/^(\s*)-\s+(.*)$/);
       if(b){
         const indent = b[1].length;
-        const target = Math.min(4, Math.floor(indent/2)); // 0,1,2,...
+        const target = Math.min(4, Math.floor(indent/2));
         if(target > depth) open(target - depth);
         else if(target < depth) close(depth - target);
-  
+
         let content = escapeHtml(b[2]).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
         html += `<li>${content}</li>`;
         continue;
       }
-  
-      // Paragraph line; close any open lists
+
+      // Plain paragraph; close any open lists to keep structure valid
       closeAll();
       let safe = escapeHtml(line).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
       html += `<p>${safe}</p>`;
@@ -845,6 +861,7 @@ function initAdmin(){
     }
   }
 
+  // Admin → Users table: click a row to expand recent bookings summary
   function renderUsers(list){
     const tb = qs("#users-body");
     tb.innerHTML = list.map(u => `
@@ -918,6 +935,7 @@ function initAdmin(){
     }
   }
 
+  // Admin → Properties list: compact card with quick actions (Update/Delete)
   function renderProps(props){
     const list = qs("#props-list");
     list.innerHTML = (props||[]).map(p => `
@@ -1095,7 +1113,7 @@ function initAdmin(){
     const mFeat = buildMulti("#ap-features", "ap-feat-btn", "ap-feat-dd", FEATURES_ADM, "Any features");
     const mTags = buildMulti("#ap-tags", "ap-tags-btn", "ap-tags-dd", TAGS_ADM, "Any tags");
 
-    // Create click
+    // Admin → Create property: basic client‑side validation before POST
     qs("#ap-create")?.addEventListener("click", async ()=>{
       // clear errors
       const hide = id => qs(id)?.classList.add("hidden");
@@ -1108,6 +1126,7 @@ function initAdmin(){
       const features = mFeat.get();
       const tags     = mTags.get();
 
+      // Guardrails: valid enums, positive integers, and at least one feature/tag
       let invalid = false;
       if(!location){ const el=qs("#ap-location-err"); el.textContent="Location is required."; el.classList.remove("hidden"); invalid = true; }
       if(!ptype){ const el=qs("#ap-type-err"); el.textContent="Type is required."; el.classList.remove("hidden"); invalid = true; }
@@ -1148,7 +1167,7 @@ function initAdmin(){
     });
   })();
 
-  // Generate properties using LLM
+  // Admin → Generate with LLM: show spinner text, POST /admin/properties/generate
   qs("#gen-btn")?.addEventListener("click", async ()=>{
     const inputEl = qs("#gen-n");
     const err = qs("#gen-err");
@@ -1165,6 +1184,7 @@ function initAdmin(){
     const btn = qs("#gen-btn");
     btn.disabled = true; if(inputEl) inputEl.disabled = true;
 
+    // Animated "Generating..." status; cleared in finally{}
     let dots = 0, tmr = null;
     if(status){
       status.textContent = "Generating properties...";
