@@ -326,7 +326,11 @@ def main():
                                     
                                     while ai_consultant_status:
                                         generate_suggestions()
-                                        ai_consultant_status = False
+                                        print("Are you satisfied with AI suggestions?")
+                                        exit_ai_choice = input("If yes, you can enter [e] to exit: ").strip()
+
+                                        if exit_ai_choice == "e":
+                                            ai_consultant_status = False
 
 
                                 elif choice_4 == "3":
@@ -443,7 +447,7 @@ def main():
                         print("[d] Delete a property")
                         print("[g] AI generate properties")
                         print("[x] Exit")
-                        choice_7 = input()
+                        choice_7 = input("Please enter your choice: ")
 
                         if choice_7 == "u":
                             print("Here are the registered users in our app: ")
