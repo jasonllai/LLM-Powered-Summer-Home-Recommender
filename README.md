@@ -1,6 +1,6 @@
 # LLM-Powered Summer Home Recommender
 
-A Python-based recommendation system for summer home rentals. It matches users with properties based on travel dates, preferences, budget, and group size, enhanced with AI-powered suggestions.
+A Python-based recommendation system for summer home rentals. It matches users with properties based on preferences, budget, and group size, enhanced with AI-powered suggestions.
 
 ## 🏠 Features
 -**Admin Portal**: 
@@ -12,13 +12,13 @@ A Python-based recommendation system for summer home rentals. It matches users w
 
   **User Profile Management**: sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.  
 
-  **Property Recommendations**: see your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
+  **Property Recommendations**: view your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
 
   **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., "Perfect mountain cabin trip for 4 friends under $200/night."
 
 ## 🔍 Property Recommendation Logic
 
-Each property is scored based on the user's profile — how close the price is to the user's budget, how well the property's guest capacity matches the user's group size, and whether the property matches the user's preferred environment. 
+Each property is scored based on the user's profile — whether the price is within the user's budget, if the property's guest capacity matches the user's group size, and whether the property matches the user's preferred environment. 
 
 ## 🚀 Installation
 
@@ -53,21 +53,21 @@ LLM-Powered-Summer-Home-Recommender/
 │   ├── Main.py                    # Main application entry point
 │   ├── server.py                  # Web server and API endpoints
 │   ├── rental_management.py       # Property and rental management logic
-│   ├── Recommender_Logic.py       # Core recommendation algorithms
-│   ├── LLM_functions.py          # AI/LLM integration functions
-│   ├── filter.py                  # Property filtering utilities
+│   ├── Recommender_Logic.py       # Recommendation algorithms
+│   ├── LLM_functions.py           # AI/LLM integration functions
+│   ├── filter.py                  # Property filtering functions
 │   └── utils.py                   # General utility functions
 │
 ├── 📁 Data
-│   ├── Properties.json            # Property listings and details
-│   ├── Users.json                 # User profiles and preferences
+│   ├── Properties.json            # Property listings and attributes
+│   ├── Users.json                 # User profiles with preferences
 │   └── Admin.json                 # Admin account information
 │
 ├── 📁 Frontend (GUI)
 │   ├── index.html                 # Landing page
 │   ├── login.html                 # User login page
 │   ├── register.html              # User registration page
-│   ├── profile.html               # User profile management
+│   ├── profile.html               # User profile page
 │   ├── search.html                # Property search interface
 │   ├── dashboard.html             # User dashboard
 │   ├── admin-login.html           # Admin login page
@@ -81,7 +81,7 @@ LLM-Powered-Summer-Home-Recommender/
 │   └── test_llm_functions.py      # Unit tests for LLM functions
 │
 ├── 📄 Configuration
-│   ├── requirements.txt           # Python dependencies
+│   ├── requirements.txt          # Python dependencies
 │   ├── .gitignore                # Git ignore rules
 │   └── README.md                 # Project documentation
 ```
@@ -92,13 +92,13 @@ LLM-Powered-Summer-Home-Recommender/
 - **Main.py**: Application entry point and initialization
 - **server.py**: Flask web server with REST API endpoints
 - **rental_management.py**: Property CRUD operations and rental logic
-- **Recommender_Logic.py**: Core recommendation scoring algorithms
+- **Recommender_Logic.py**: Main recommendation scoring algorithms
 - **LLM_functions.py**: AI-powered features and suggestions
 - **filter.py**: Advanced property filtering capabilities
 - **utils.py**: Helper functions and utilities
 
 ### Data Layer
-- **Properties.json**: Comprehensive property database with details, pricing, and availability
+- **Properties.json**: Comprehensive property database with details, price, and availability
 - **Users.json**: User profiles, preferences, and booking history
 - **Admin.json**: Administrative accounts and permissions
 
@@ -216,13 +216,13 @@ Base URL: `http://127.0.0.1:5050`
 ## How it works
 
 - Recommender (`backend/domain/recommender.py`):
-  - Scores listings by tag affinity to the user’s preferred environment, budget fit, and capacity match, then returns top 20.
+  - Scores listings by how closely the properties' attributes match the user’s preferred environment, budget, and group size, then returns top 20.
 - Filters (`backend/domain/filters.py`):
-  - Applies field equality/inclusion checks and optional availability window logic.
+  - Checks for properties that are an exact match to the user's selected filters.
 - Domain (`backend/domain/rental_management.py`):
-  - Users/properties/bookings CRUD and date consistency; persists into JSON files in `data/`.
+  - Users/properties/bookings CRUD and date consistency; saves into JSON files in `data/`.
 - AI (`backend/ai/service.py`):
-  - Uses OpenRouter for both chat suggestions and structured property generation with strict schema and coherence constraints.
+  - Uses OpenRouter for both chat suggestions and property generation.
 
 ---
 
