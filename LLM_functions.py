@@ -8,11 +8,21 @@ from textwrap import dedent
 from string import Template
 
 
+# OpenRouter provider key; fail fast at import if not configured
+API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not API_KEY:
+    raise RuntimeError("OPENROUTER_API_KEY is not set (activate your conda env or set the var).")
+
+
+
+# Canonical property "type" values used throughout the app (UI + data gen)
 type_pool = ["cabin", "apartment", "cottage", "loft", "villa", "tiny house", "studio"]
 
+# Supported city list for synthetic data and validation
 location_pool = ["Vancouver", "Toronto", "Montreal", "Calgary", "Edmonton", 
                  "Winnipeg", "Halifax", "Victoria", "Quebec City", "Fredericton"]
 
+# Feature vocabulary (LLM must pick from these to keep data consistent)
 feature_pool = ["mountain view", "city skyline view", "lakefront", "riverfront",
                 "oceanfront", "beach access", "balcony or patio", "rooftop terrace",
                 "private hot tub", "sauna", "private pool", "fireplace", "houskeeper service",
@@ -21,6 +31,7 @@ feature_pool = ["mountain view", "city skyline view", "lakefront", "riverfront",
                 "dedicated workspace", "smart TV with streaming", "game room", "fitness room",
                 "ski-in/ski-out", "wheelchair accessible", "pet-friendly"]
 
+# Tag vocabulary (higher‑level descriptors used by filters and recommender)
 tag_pool = ["mountains", "remote", "adventure", "beach", "city", "lake", 
             "river", "ocean", "forest", "park", "national park", "state park", 
             "national forest", "state forest", "modern","rustic","historic",
@@ -29,6 +40,7 @@ tag_pool = ["mountains", "remote", "adventure", "beach", "city", "lake",
 
 
 
+# Template that instructs the LLM how to emit a batch of property objects (pure JSON)
 DATA_PROMPT = Template(dedent("""
 You are a data generator.
 
@@ -68,7 +80,7 @@ BEGIN JSON
 """).strip())
 
 
-
+# Template for a one‑shot TripBuddy prompt when no message history is provided
 CHAT_PROMPT = Template(dedent("""
 You are TripBuddy, a helpful travel AI.
 
@@ -104,7 +116,7 @@ OUTPUT RULE
 """).strip())
 
 
-
+# System prompt injected at the start of every assistant exchange (enforces format)
 SYSTEM_PROMPT = dedent("""
 You are TripBuddy, a helpful travel AI.
 
@@ -149,26 +161,22 @@ OUTPUT RULE
 """).strip()
 
 
-API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not API_KEY:
-    raise RuntimeError("OPENROUTER_API_KEY is not set (activate your conda env or set the var).")
 
-
-
+# Low‑level single‑turn call to OpenRouter (used by property generation and CLI demo)
 def get_response(prompt):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    url = "https://openrouter.ai/api/v1/chat/completions"  # OpenRouter chat endpoint
     headers = {
-        "Authorization": f"Bearer {API_KEY}",
+        "Authorization": f"Bearer {API_KEY}",               # provider key
         "Content-Type": "application/json"
     }
     
-    max_retries = 10
+    max_retries = 10                                        # cap on 429 retry attempts
     payload = {
-        "model": "google/gemini-2.0-flash-exp:free",
-        "messages": [{"role": "user", "content": prompt}]
+        "model": "google/gemini-2.0-flash-exp:free",        # default free-tier model
+        "messages": [{"role": "user", "content": prompt}]   # single user message
     }
 
-    for attempt in range(max_retries):
+    for attempt in range(max_retries):                      # simple exponential backoff on 429
         r = requests.post(url, headers=headers, json=payload, timeout=60)
         if r.status_code == 200:
             response = r.json()
@@ -183,76 +191,7 @@ def get_response(prompt):
     raise RuntimeError("Rate limited after retries. Try a different model or add your own provider key.")
 
 
-def extract_json_array(text: str) -> list:
-    # strip code fences
-    s = text.strip()
-    if s.startswith("```"):
-        s = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", s, flags=re.DOTALL)
-    # take the outermost JSON array
-    i, j = s.find("["), s.rfind("]")
-    if i == -1 or j == -1 or j <= i:
-        raise ValueError("No JSON array found in response.")
-    return json.loads(s[i:j+1])
-
-
-def load_json_array(path: str) -> list:
-    if not os.path.exists(path) or os.path.getsize(path) == 0:
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data if isinstance(data, list) else []
-    except json.JSONDecodeError:
-        return []
-
-
-def append_properties_to_file(props: list, path: str = "data/Properties.json") -> int:
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    existing = load_json_array(path)
-    seen = {p.get("property_id") for p in existing if isinstance(p, dict)}
-    to_add = []
-    for p in props:
-        if not isinstance(p, dict):
-            continue
-        pid = p.get("property_id")
-        if pid and pid in seen:
-            continue
-        seen.add(pid)
-        to_add.append(p)
-    merged = existing + to_add
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(merged, f, indent=2, ensure_ascii=False)
-    return len(to_add)
-
-
-def generate_properties(number_of_properties):
-    num_properties = int(number_of_properties)
-    print("Generating properties...")
-    data_prompt = DATA_PROMPT.substitute(n=num_properties,
-                                         location_pool=", ".join(location_pool),
-                                         type_pool=", ".join(type_pool),
-                                         feature_pool=", ".join(feature_pool),
-                                         tag_pool=", ".join(tag_pool))
-    response = get_response(data_prompt)
-    props = extract_json_array(response)
-    append_properties_to_file(props)
-    print(f"Successfully generated {num_properties} properties!")
-
-
-
-def generate_suggestions():
-    print("\nHi, I'm TripBuddy, your AI travel assistant.\n")
-    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.")
-    print("Example input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.\n")
-    inp = input("Please enter your travel preferences: ")
-    inp = str(inp)
-    print("Generating suggestions...\n\n")
-    chat_prompt = CHAT_PROMPT.substitute(user_input=inp)
-    response = get_response(chat_prompt)
-    print(f"Here are some suggestions for you: \n{response}")
-
-
-
+# Call OpenRouter chat completions with basic 429 backoff; returns assistant text
 def get_response_messages(messages, max_retries=10):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
@@ -272,13 +211,88 @@ def get_response_messages(messages, max_retries=10):
     raise RuntimeError("Rate limited after retries. Try a different model or add your own provider key.")
 
 
+
+# Extract the outermost JSON array from the model's text (tolerates fenced blocks)
+def extract_json_array(text: str) -> list:
+    # strip code fences
+    s = text.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", s, flags=re.DOTALL)
+    # take the outermost JSON array
+    i, j = s.find("["), s.rfind("]")
+    if i == -1 or j == -1 or j <= i:
+        raise ValueError("No JSON array found in response.")
+    return json.loads(s[i:j+1])
+
+
+# Load a JSON array from disk; return [] for missing/empty/invalid files
+def load_json_array(path: str) -> list:
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except json.JSONDecodeError:
+        return []
+
+
+# Merge new property dicts into file, de‑duping by property_id; returns number added
+def append_properties_to_file(props: list, path: str = "data/Properties.json") -> int:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    existing = load_json_array(path)
+    seen = {p.get("property_id") for p in existing if isinstance(p, dict)}
+    to_add = []
+    for p in props:
+        if not isinstance(p, dict):
+            continue
+        pid = p.get("property_id")
+        if pid and pid in seen:
+            continue
+        seen.add(pid)
+        to_add.append(p)
+    merged = existing + to_add
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(merged, f, indent=2, ensure_ascii=False)
+    return len(to_add)
+
+
+# Ask the LLM to synthesize n property records and persist unique ones
+def generate_properties(number_of_properties):
+    num_properties = int(number_of_properties)
+    print("Generating properties...")
+    data_prompt = DATA_PROMPT.substitute(n=num_properties,
+                                         location_pool=", ".join(location_pool),
+                                         type_pool=", ".join(type_pool),
+                                         feature_pool=", ".join(feature_pool),
+                                         tag_pool=", ".join(tag_pool))
+    response = get_response(data_prompt)
+    props = extract_json_array(response)
+    append_properties_to_file(props)
+    print(f"Successfully generated {num_properties} properties!")
+
+
+# Simple CLI helper to try TripBuddy in one-off interactive mode
+def generate_suggestions():
+    print("\nHi, I'm TripBuddy, your AI travel assistant.\n")
+    print("Tell me where you're going, when, and what you enjoy - I'll suggest activities tailored to you.")
+    print("Example input: 3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion.\n")
+    inp = input("Please enter your travel preferences: ")
+    inp = str(inp)
+    print("Generating suggestions...\n\n")
+    chat_prompt = CHAT_PROMPT.substitute(user_input=inp)
+    response = get_response(chat_prompt)
+    print(f"Here are some suggestions for you: \n{response}")
+
+
+# Build messages (system + history or single turn) and fetch TripBuddy’s reply
 def generate_suggestions_text(user_input: str = "", messages: list | None = None) -> str:
     # If the frontend sends history, prepend system and forward as-is
     if messages and isinstance(messages, list):
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
         return get_response_messages(msgs)
 
-    # Single-turn fallback
+    # Single-turn fallback with a reasonable default
     text = (user_input or "").strip()
     if not text:
         text = "3 days in Kyoto in April, mid budget, love food + temples, slow pace, hotel near Gion."
