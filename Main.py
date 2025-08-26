@@ -1,15 +1,15 @@
 import json
 import pandas as pd
 
-from rental_management import User, Admin, Property
+from rental_management import User, Property
 from rental_management import load_data_from_json, validate_date
 from rental_management import validate_user, validate_admin
 from rental_management import create_user_profile, view_user_profile, delete_profile, edit_user_profile, create_booking, delete_booking
 from rental_management import view_users, view_properties, add_properties, delete_property, update_property
 
-from recommender_logic import ListingRecommender
+from Recommender_Logic import ListingRecommender
 from filter import filter_properties
-# from LLM_functions import generate_properties, generate_suggestions
+from LLM_functions import generate_properties, generate_suggestions
 from utils import get_int_input, get_string_input, get_string_list_input
 
 
@@ -25,9 +25,6 @@ def main():
 
     user_logged_in = False
     admin_logged_in = False
-
-    user_username = ""
-    user_password = ""
 
     curr_user = None
 
@@ -51,18 +48,7 @@ def main():
                 "family-friendly","kid-friendly","pet-friendly","romantic","business-travel",
                 "nightlife","eco-friendly","spa","golf","foodie","farm-stay","glamping","long-term"]
 
-    # with open("Users.json", "r") as f:
-    #     users_data = json.load(f)
-
-    # users_obj_list = [User.from_dict(user_dict) for user_dict in users_data]
-
-    # with open("Properties.json", "r") as f:
-    #     properties_data = json.load(f)
-
-    # properties_obj_list = [Property.from_dict(property_dict) for property_dict in properties_data]
-
     user_data = load_data_from_json("data/Users.json")
-    admin_data = load_data_from_json("data/Admin.json")
 
 
     while app_status:
@@ -148,7 +134,7 @@ def main():
                                     new_user_dict = User(new_user_id, new_name, new_password, new_booking_history, new_group_size, new_preferred_environment, new_budget_range).to_dict()
                                     edit_user_profile(new_user_dict)
                                     
-                                elif user_edit_choice == "3": # Delete
+                                elif user_edit_choice == "3":
                                     print("Here are your current booking(s): ")
                                     user_profile = view_user_profile(curr_user.user_id)
                                     user_booking_df = pd.DataFrame(user_profile["booking_history"])
@@ -212,7 +198,6 @@ def main():
                             search_status = True
 
                             while search_status:
-                                # Call recommender logic function here
                                 recommender = ListingRecommender()
                                 recommended_properties = recommender.calculate_total_score(curr_user.user_id)
                                 recommended_properties_df = pd.DataFrame(recommended_properties)
@@ -340,7 +325,7 @@ def main():
                                     ai_consultant_status = True
                                     
                                     while ai_consultant_status:
-                                        # generate_suggestions()
+                                        generate_suggestions()
                                         ai_consultant_status = False
 
 
@@ -397,7 +382,6 @@ def main():
 
 
                 elif choice_2 == "2":
-                    # create_user_profile()
                     print("\n=== CREATE NEW PROFILE ===")
                     new_user_id = input("Enter your user id: ").strip()
                     new_user_name = input("Enter your username: ").strip()
@@ -602,7 +586,7 @@ def main():
 
                         elif choice_7 == "g":
                             n = get_int_input("Enter the number of properties you want to generate: ")
-                            # generate_properties(n)
+                            generate_properties(n)
 
                         elif choice_7 == "x":
                             print("Log out successfully!")
