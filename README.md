@@ -13,7 +13,6 @@ A Python-based recommendation system for summer home rentals. It matches users w
 - [API Overview](#-api-overview)
 - [How it works](#-how-it-works)
 - [Notes](#-notes)
-- [License](#-license)
 - [Support](#-support)
 
 ## 🏠 Features
