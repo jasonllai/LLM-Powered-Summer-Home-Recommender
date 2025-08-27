@@ -10,8 +10,11 @@ from rental_management import create_user_profile, view_user_profile, edit_user_
 
 app = Flask(__name__)
 
+# Fixed whitelist for registration's preferred environment input (used to validate /register)
 ALLOWED_ENVS = ["beach","lake","forest","mountains","nightlife","remote","glamping","city","modern","historic"]
 
+
+# ---- Helpers ----
 def _normalize_date(s):
     # accepts YYYY-MM-DD or YYYY/M/D; returns strict YYYY-MM-DD or None
     try:
@@ -33,16 +36,21 @@ def _date_list_inclusive(start_iso, end_iso):
         cur += datetime.timedelta(days=1)
     return out
 
+
+# ---- Flask routes ----
 @app.after_request
 def add_cors(resp):
+    # Simple CORS allow-all for local development (consider scoping origins for production)
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
 
 
+# ---- User routes ----
 @app.route("/recommend", methods=["POST", "OPTIONS"])
 def recommend():
+    # Returns top recommended properties for a user (normalized to frontend shape)
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -50,12 +58,11 @@ def recommend():
     if not user_id:
         return jsonify(error="userId is required"), 400
 
-    # Run recommender
     try:
         rec = ListingRecommender()
-        rows = rec.calculate_total_score(user_id)  # list of dicts
+        rows = rec.calculate_total_score(user_id)  # domain logic
 
-        # Map to frontend shape (id/pricePerNight/guestCapacity/etc.)
+        # Map domain fields → UI fields
         out = [{
             "id": r.get("property_id"),
             "location": r.get("location"),
@@ -74,6 +81,7 @@ def recommend():
 
 @app.route("/assistant", methods=["POST", "OPTIONS"])
 def assistant():
+    # Proxy to LLM: calls TripBuddy prompt builder and returns Markdown text
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -90,6 +98,7 @@ def assistant():
     
 @app.route("/login", methods=["POST", "OPTIONS"])
 def login():
+    # Basic login against Users.json (plaintext; replace with hashed auth for production)
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -111,6 +120,7 @@ def login():
 
 @app.route("/profile", methods=["POST", "OPTIONS"])
 def profile():
+    # Load and map a user's profile to the frontend shape
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -119,11 +129,11 @@ def profile():
         return jsonify(error="userId is required"), 400
 
     try:
-        u = view_user_profile(user_id)  # returns a dict or None
+        u = view_user_profile(user_id)  # domain read; returns raw domain dict
         if not u:
             return jsonify(error="user not found"), 404
 
-        # map backend -> frontend shape
+        # Map domain → UI fields
         out = {
             "id": u.get("user_id"),
             "name": u.get("name"),
@@ -142,9 +152,9 @@ def profile():
         return jsonify(error=str(e)), 500
     
 
-
 @app.route("/profile/update", methods=["POST", "OPTIONS"])
 def profile_update():
+    # Partial profile update; translates UI keys → domain keys, persists, returns updated view
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -152,7 +162,7 @@ def profile_update():
     if not user_id:
         return jsonify(error="userId is required"), 400
 
-    # map frontend -> rental_management keys
+    # Map UI fields → domain fields (only provided keys are updated)
     new_user = {"user_id": user_id}
     if "name" in data: new_user["name"] = data["name"]
     if "password" in data: new_user["password"] = data["password"]
@@ -168,6 +178,7 @@ def profile_update():
         u = view_user_profile(user_id, file_path=os.path.join(os.path.dirname(__file__), "data", "Users.json"))
         if not u:
             return jsonify(error="user not found after update"), 404
+
         out = {
             "id": u.get("user_id"),
             "name": u.get("name"),
@@ -185,8 +196,10 @@ def profile_update():
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
     
+    
 @app.route("/booking/delete", methods=["POST", "OPTIONS"])
 def booking_delete():
+    # Removes a booking and returns updated bookingHistory in UI shape
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -216,8 +229,10 @@ def booking_delete():
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
     
+    
 @app.route("/account/delete", methods=["POST", "OPTIONS"])
 def account_delete():
+    # Deletes a user profile; id taken from JSON body
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -225,7 +240,6 @@ def account_delete():
     if not user_id:
         return jsonify(error="userId is required"), 400
     try:
-        # delete_profile uses default file path; keep consistent with your repo
         delete_profile(user_id)
         return jsonify(ok=True)
     except Exception as e:
@@ -235,6 +249,7 @@ def account_delete():
     
 @app.route("/booking/create", methods=["POST", "OPTIONS"])
 def booking_create():
+    # Creates a booking after date normalization, order check, and availability check
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -247,13 +262,13 @@ def booking_create():
     if not (user_id and property_id and start and end):
         return jsonify(error="Missing or invalid fields"), 400
 
-    # order check
+    # Ensure end >= start
     sdt = datetime.datetime.strptime(start, '%Y-%m-%d').date()
     edt = datetime.datetime.strptime(end, '%Y-%m-%d').date()
     if edt < sdt:
         return jsonify(error="End date cannot be before the start date."), 400
 
-    # availability check
+    # Ensure requested dates are not already unavailable for the property
     try:
         with open(os.path.join(os.path.dirname(__file__), "data", "Properties.json"), "r", encoding="utf-8") as f:
             props = json.load(f)
@@ -267,7 +282,6 @@ def booking_create():
     except Exception as e:
         return jsonify(error=str(e)), 500
 
-    # persist via domain function
     ok = create_booking(user_id, property_id, start, end)
     if not ok:
         return jsonify(error="Failed to create booking."), 400
@@ -276,6 +290,7 @@ def booking_create():
 
 @app.route("/register", methods=["POST","OPTIONS"])
 def register():
+    # Creates a user with basic validations; ensures uniqueness by user_id
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -286,7 +301,7 @@ def register():
     budget = data.get("budgetRange") or []
     group_size = data.get("groupSize")
 
-    # basic validations
+    # Validations: required fields, integer ranges, allowed enums, budget pair
     if not (username and name and password):
         return jsonify(error="Missing required fields"), 400
     try:
@@ -306,7 +321,7 @@ def register():
     if bmin <= 0 or bmax < bmin:
         return jsonify(error="Budget range invalid (min > 0 and max >= min)"), 400
 
-    # uniqueness
+    # Uniqueness check (Users.json)
     users_path = os.path.join(os.path.dirname(__file__), "data", "Users.json")
     try:
         with open(users_path, "r", encoding="utf-8") as f:
@@ -316,7 +331,6 @@ def register():
     if any(u.get("user_id") == username for u in users):
         return jsonify(error="This username has been used. Please choose another one."), 409
 
-    # create
     ok = create_user_profile(username, name, password, group_size, preferred, [bmin, bmax], file_path=users_path)
     if not ok:
         return jsonify(error="Failed to create user"), 500
@@ -326,11 +340,12 @@ def register():
 
 @app.route("/search", methods=["POST","OPTIONS"])
 def search():
+    # Searches properties with optional filters; validates numbers and date order
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
 
-    # Read optional filters
+    # Optional filters (normalize empty strings to None)
     location     = (data.get("location") or "").strip() or None
     prop_type    = (data.get("propType") or "").strip() or None
     features     = data.get("features") or None
@@ -338,7 +353,7 @@ def search():
     start_date   = (data.get("startDate") or "").strip() or None
     end_date     = (data.get("endDate") or "").strip() or None
 
-    # Validate numeric fields
+    # Numbers: group size and prices
     group_size = data.get("groupSize")
     if group_size is not None:
         try:
@@ -367,7 +382,7 @@ def search():
     if min_price is not None and max_price is not None and max_price < min_price:
         return jsonify(error="Max price must be >= min price"), 400
 
-    # Date order (Filter_And_Sort also validates, but we give earlier feedback)
+    # Dates: order and format
     if start_date and end_date:
         try:
             sdt = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -389,7 +404,7 @@ def search():
             start_date=start_date,
             end_date=end_date
         )
-        # Map to frontend shape (same as /recommend)
+        # Normalize to UI fields
         out = [{
             "id": p.get("property_id"),
             "location": p.get("location"),
@@ -403,10 +418,13 @@ def search():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
+
     
     
+# ---- Admin routes ----
 @app.route("/admin/login", methods=["POST", "OPTIONS"])
 def admin_login():
+    # Admin login using domain validator (separate from user login)
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -424,9 +442,9 @@ def admin_login():
         return jsonify(error=str(e)), 500
     
     
-# server.py
 @app.route("/admin/users", methods=["GET", "POST", "OPTIONS"])
 def admin_users():
+    # Lists users and expands recent bookings; includes a "pretty" property name
     if request.method == "OPTIONS":
         return ("", 204)
     try:
@@ -461,6 +479,7 @@ def admin_users():
     
 @app.route("/admin/properties", methods=["POST","OPTIONS"])
 def admin_properties():
+    # Returns all properties for admin management
     if request.method == "OPTIONS":
         return ("", 204)
     try:
@@ -469,9 +488,11 @@ def admin_properties():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
+    
 
 @app.route("/admin/property/update", methods=["POST","OPTIONS"])
 def admin_property_update():
+    # Updates a property; validates enums, numbers, and keeps unavailable_dates unless provided
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -480,7 +501,7 @@ def admin_property_update():
     if not all(k in p for k in required):
         return jsonify(error="Missing fields"), 400
 
-    # validations
+    # Enum and numeric validations (rely on pools imported from LLM_functions)
     if p["location"] not in location_pool: return jsonify(error="Invalid location"), 400
     if p["type"] not in type_pool: return jsonify(error="Invalid type"), 400
     try:
@@ -498,7 +519,7 @@ def admin_property_update():
     if not set(p.get("tags") or []).issubset(set(tag_pool)):
         return jsonify(error="tags contain invalid values"), 400
 
-    # keep unavailable_dates as-is if omitted
+    # Preserve current unavailable_dates unless explicitly sent by client
     if "unavailable_dates" not in p:
         try:
             with open(os.path.join(os.path.dirname(__file__), "data", "Properties.json"), "r", encoding="utf-8") as f:
@@ -514,9 +535,11 @@ def admin_property_update():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
+    
 
 @app.route("/admin/property/delete", methods=["POST","OPTIONS"])
 def admin_property_delete():
+    # Deletes a property (and cleans up related data in users, if needed by domain)
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -532,10 +555,9 @@ def admin_property_delete():
         return jsonify(error=str(e)), 500
     
     
-# server.py (imports already include pools and add_properties)
-
 @app.route("/admin/property/create", methods=["POST","OPTIONS"])
 def admin_property_create():
+    # Creates a new property; validates enums, numbers, and requires at least one feature/tag
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -567,8 +589,10 @@ def admin_property_create():
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
     
+    
 @app.route("/admin/properties/generate", methods=["POST","OPTIONS"])
 def admin_properties_generate():
+    # Triggers LLM-backed property generation; validates n ≥ 1
     if request.method == "OPTIONS":
         return ("", 204)
     data = request.get_json(silent=True) or {}
@@ -585,6 +609,7 @@ def admin_properties_generate():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(error=str(e)), 500
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5050, debug=True)
