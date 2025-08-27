@@ -2,19 +2,28 @@
 
 A Python-based recommendation system for summer home rentals. It matches users with properties based on preferences, budget, and group size, enhanced with AI-powered suggestions.
 
+## Table of Contents
+- [Features](#-features)
+- [Property Recommendation Logic](#-property-recommendation-logic)
+- [Installation](#-installation)
+- [Usage (run locally)](#-usage-run-locally)
+- [Project Structure](#-project-structure)
+- [Key Components](#-key-components)
+- [Development](#-development)
+- [API Overview](#-api-overview)
+- [How it works](#-how-it-works)
+- [Notes](#-notes)
+- [License](#-license)
+- [Support](#-support)
+
 ## 🏠 Features
--**Admin Portal**: 
+**Admin Portal**
+  - Property Management: add, edit, or delete property listings.
 
-  Property Management: add, edit, or delete property listings.
-
-
--**User Portal**:  
-
-  **User Profile Management**: sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.  
-
-  **Property Recommendations**: view your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
-
-  **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., "Perfect mountain cabin trip for 4 friends under $200/night."
+**User Portal**
+  - **User Profile Management**: sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.
+  - **Property Recommendations**: view your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
+  - **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., "Perfect mountain cabin trip for 4 friends under $200/night."
 
 ## 🔍 Property Recommendation Logic
 
@@ -33,57 +42,92 @@ cd LLM-Powered-Summer-Home-Recommender
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
+## 💻 Usage (run locally)
 
-Run the main application:
+### 1) Create and activate a virtual env
 ```bash
-python Main.py
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
 ```
 
+### 2) Set your AI key (required for server to start)
+Set this if you want to use the AI assistant or auto‑generate properties. The backend imports the AI module at startup and requires a key.
+```bash
+export OPENROUTER_API_KEY="your_api_key_here"
+```
+If you don’t have a key yet, you can still run the backend and frontend by temporarily removing AI usage, but by default the backend expects the key to be set.
+
+### 3) Start the backend (Flask API)
+```bash
+python server.py
+# Server runs at http://127.0.0.1:5050
+```
+
+### 4) Open the frontend
+Open the static files via a simple HTTP server
+```bash
+python -m http.server -d GUI 8080
+# Then open http://127.0.0.1:8080 in your browser
+```
 The application will:
 1. Start the web server
 2. Provide access to the user and admin portals
 3. Enable property recommendations and management
 
+Notes:
+- Ensure `GUI/assets/app.js` has `API_BASE = "http://127.0.0.1:5050"`.
+- Admin/user credentials are stored in `data/Admin.json` and `data/Users.json`.
+- `Main.py` is CLI-only; it is not used to run the web app.
+
+
+### CLI demo (optional)
+```bash
+python Main.py
+```
+
 ## 🏗️ Project Structure
 
 ```
 LLM-Powered-Summer-Home-Recommender/
-├── 📁 Core Application
-│   ├── Main.py                    # Main application entry point
-│   ├── server.py                  # Web server and API endpoints
-│   ├── rental_management.py       # Property and rental management logic
-│   ├── Recommender_Logic.py       # Recommendation algorithms
-│   ├── LLM_functions.py           # AI/LLM integration functions
-│   ├── filter.py                  # Property filtering functions
-│   └── utils.py                   # General utility functions
+├── server.py                   # Flask API server (all endpoints: auth, profile, search, bookings, admin, assistant)
+├── LLM_functions.py            # LLM prompts + OpenRouter client + data generation helpers
+├── Recommender_Logic.py        # Recommendation scoring logic (top-20, etc.)
+├── rental_management.py        # Domain: users/properties/bookings CRUD + JSON persistence
+├── filter.py                   # Search filtering functions (and sorting as JSON)
+├── utils.py                    # Misc utility helpers
+├── Main.py                     # CLI utilities/demos (not the web server entry point)
+├── requirements.txt            # Python dependencies
+├── README.md                   # Project docs
+├── .gitignore
 │
-├── 📁 Data
-│   ├── Properties.json            # Property listings and attributes
-│   ├── Users.json                 # User profiles with preferences
-│   └── Admin.json                 # Admin account information
+├── data/                       # App data (JSON stores)
+│   ├── Properties.json
+│   ├── Users.json
+│   └── Admin.json
 │
-├── 📁 Frontend (GUI)
-│   ├── index.html                 # Landing page
-│   ├── login.html                 # User login page
-│   ├── register.html              # User registration page
-│   ├── profile.html               # User profile page
-│   ├── search.html                # Property search interface
-│   ├── dashboard.html             # User dashboard
-│   ├── admin-login.html           # Admin login page
-│   ├── admin.html                 # Admin dashboard
-│   └── 📁 assets/
-│       ├── app.js                 # Frontend JavaScript logic
-│       ├── style.css              # Styling and CSS
-│       └── 📁 img/                # Image assets
+├── GUI/                        # Frontend (static HTML/CSS/JS)
+│   ├── index.html              # Landing page (hero carousel)
+│   ├── login.html              # User login
+│   ├── register.html           # User registration
+│   ├── dashboard.html          # User dashboard
+│   ├── search.html             # Search + recommendations + AI assistant
+│   ├── profile.html            # User profile + booking history
+│   ├── admin-login.html        # Admin login
+│   └── admin.html              # Admin dashboard (users/properties/LLM generate)
 │
-├── 📁 Testing
-│   └── test_llm_functions.py      # Unit tests for LLM functions
+├── GUI/assets/
+│   ├── app.js                  # Frontend logic (routing/init, UI handlers, AI modal, search rendering)
+│   ├── style.css               # Global styles (includes AI assistant and hero carousel)
+│   └── img/                    # Landing page carousel images
+│       ├── img1.png
+│       ├── img2.png
+│       ├── img3.png
+│       ├── img4.png
+│       └── img5.png
 │
-├── 📄 Configuration
-│   ├── requirements.txt          # Python dependencies
-│   ├── .gitignore                # Git ignore rules
-│   └── README.md                 # Project documentation
+└── test/
+    └── test_llm_functions.py   # Unit tests for LLM helper(s)
 ```
 
 ## 🔧 Key Components
@@ -118,97 +162,59 @@ This project is designed to be easily extensible. You can:
 - Extend the LLM functionality in `LLM_functions.py`
 - Customize the frontend in the `GUI/` directory
 
-## Setup
 
-### 1) Python environment
-```bash
-cd /Users/superman/Desktop/UofT/Python/Rental_Project/SummerHome
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-pip install -r requirements.txt
-```
 
-### 2) Environment variables (LLM features)
-Set this if you want to use the AI assistant or auto‑generate properties. The backend imports the AI module at startup and requires a key.
-```bash
-export OPENROUTER_API_KEY="your_api_key_here"
-```
-
-If you don’t have a key yet, you can still run the backend and frontend by temporarily removing AI usage, but by default the backend expects the key to be set.
-
----
-
-## Run
-
-### Start the backend (Flask API)
-```bash
-source .venv/bin/activate
-python -m backend.app
-# Server runs at http://127.0.0.1:5050
-```
-
-### Open the frontend (static)
-Option A: Open the HTML directly (e.g., `frontend/index.html`).
-
-Option B: Serve statically (recommended):
-```bash
-python -m http.server -d frontend 8080
-# Then open http://127.0.0.1:8080 in your browser
-```
-
-The frontend is preconfigured to call the backend at `http://127.0.0.1:5050`.
-
-### CLI demo (optional)
-```bash
-python -m scripts.cli
-```
 
 ---
 
 ## API Overview
-
 Base URL: `http://127.0.0.1:5050`
 
 ### Auth & Profile
-- `POST /register` → create user
-  - body: `{ userId, name, password, preferredEnv, budgetRange:[min,max], groupSize }`
-- `POST /login` → user login
-  - body: `{ userId, password }`
-- `POST /profile` → get user profile
-  - body: `{ userId }`
-- `POST /profile/update` → update partial fields
-  - body: subset of `{ userId, name, password, preferredEnv, budgetRange:[min,max], groupSize }`
-- `POST /account/delete` → delete user and reconcile property availability
-  - body: `{ userId }`
+
+| Method | Path              | Purpose        |
+|--------|-------------------|----------------|
+| POST   | `/login`          | User login     |
+| POST   | `/register`       | Create user    |
+| POST   | `/profile`        | Get profile    |
+| POST   | `/profile/update` | Update profile |
+| POST   | `/account/delete` | Delete account |
+
+Request/response details remain the same as listed below in your original bullets.
 
 ### Recommendations & Search
-- `POST /recommend` → top‑20 recommended properties for a user
-  - body: `{ userId }`
-- `POST /search` → filtered properties
-  - body (all optional): `{ location, propType, minPrice, maxPrice, groupSize, features:[...], tags:[...], startDate, endDate }`
+
+| Method | Path         | Purpose                 |
+|--------|--------------|-------------------------|
+| POST   | `/recommend` | Recommended properties  |
+| POST   | `/search`    | Filtered property search|
 
 ### Booking
-- `POST /booking/create` → create booking
-  - body: `{ userId, propertyId, start, end }` with dates `YYYY-MM-DD`
-- `POST /booking/delete` → delete a booking
-  - body: `{ userId, propertyId, start, end }`
+
+| Method | Path              | Purpose        |
+|--------|-------------------|----------------|
+| POST   | `/booking/create` | Create booking |
+| POST   | `/booking/delete` | Delete booking |
 
 ### Admin
-- `POST /admin/login` → admin login: `{ userId, password }`
-- `POST /admin/users` → list users + bookings
-- `POST /admin/properties` → list properties
-- `POST /admin/property/create` → create property
-  - body: `{ location, type, price_per_night, guest_capacity, features:[...], tags:[...] }`
-- `POST /admin/property/update` → update property
-  - body: `{ property_id, location, type, price_per_night, guest_capacity, features:[...], tags:[...], [unavailable_dates] }`
-- `POST /admin/property/delete` → delete property
-  - body: `{ propertyId }`
-- `POST /admin/properties/generate` → generate N properties via LLM
-  - body: `{ n }`
+
+| Method      | Path                         | Purpose                   |
+|-------------|------------------------------|---------------------------|
+| POST        | `/admin/login`               | Admin login               |
+| GET or POST | `/admin/users`               | Users + recent bookings   |
+| POST        | `/admin/properties`          | List properties           |
+| POST        | `/admin/property/create`     | Create property           |
+| POST        | `/admin/property/update`     | Update property           |
+| POST        | `/admin/property/delete`     | Delete property           |
+| POST        | `/admin/properties/generate` | Generate properties (LLM) |
 
 ### AI Assistant
-- `POST /assistant` → travel blurb/ideas
-  - body: `{ user_input, messages }` (messages optional for chat continuity)
+
+| Method | Path         | Purpose             |
+|--------|--------------|---------------------|
+| POST   | `/assistant` | Travel suggestions  |
+
+> Note: All endpoints support `OPTIONS` (CORS preflight). Errors return `{ "error": "message" }` with appropriate HTTP status.
 
 ---
 
@@ -233,13 +239,6 @@ Base URL: `http://127.0.0.1:5050`
 
 
 
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📞 Support
 
