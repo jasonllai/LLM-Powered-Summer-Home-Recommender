@@ -103,8 +103,6 @@ def main():
                         elif choice_3 == "u":
                              while True:
                                 print(f"\n=== EDITING USER PROFILE ===")
-                                # print("Current profile:")
-                                # view_user_profile(curr_user.user_id)
                                 new_user_id = curr_user.user_id
                                 new_name = curr_user.name
                                 new_password = curr_user.password
@@ -201,7 +199,6 @@ def main():
                                 recommender = ListingRecommender()
                                 recommended_properties = recommender.calculate_total_score(curr_user.user_id)
                                 recommended_properties_df = pd.DataFrame(recommended_properties)
-                                # recommended_properties_df["tags"] = recommended_properties_df["tags"].apply(lambda x: [tag.strip() for tag in x.split(",")])
                                 recommended_properties_df = recommended_properties_df.drop(columns=["total_score"])
                                 recommended_properties_df["property_index"] = recommended_properties_df.index
                                 print("Check out these properties that may be of your interest!")
@@ -620,5 +617,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
+    
