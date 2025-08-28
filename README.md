@@ -5,8 +5,8 @@ A Python-based recommendation system for summer home rentals. It matches users w
 ## Table of Contents
 - [Features](#features)
 - [Property Recommendation Logic](#property-recommendation-logic)
-- [Installation](#installation)
-- [Usage (run locally)](#usage-run-locally)
+- [Setup Instruction & Installation](#installation)
+- [LLM Integrated Usage (run locally)](#usage-run-locally)
 - [Project Structure](#project-structure)
 - [Key Components](#key-components)
 - [Development](#development)
@@ -17,6 +17,7 @@ A Python-based recommendation system for summer home rentals. It matches users w
 - [Citation](#citation)
 - [Support](#support)
 
+<a id="features"></a>
 ## 🏠 Features
 **Admin Portal**
   - Property Management: add, edit, or delete property listings.
@@ -26,11 +27,13 @@ A Python-based recommendation system for summer home rentals. It matches users w
   - **Property Recommendations**: view your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
   - **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., "Perfect mountain cabin trip for 4 friends under $200/night."
 
+<a id="property-recommendation-logic"></a>
 ## 🔍 Property Recommendation Logic
 
 Each property is scored based on the user's profile — whether the price is within the user's budget, if the property's guest capacity matches the user's group size, and whether the property matches the user's preferred environment. 
 
-## 🚀 Installation
+<a id="installation"></a>
+## 🚀 Setup Instruction & Installation
 
 1. Clone the repository:
 ```bash
@@ -43,7 +46,8 @@ cd LLM-Powered-Summer-Home-Recommender
 pip install -r requirements.txt
 ```
 
-## 💻 Usage (run locally)
+<a id="usage-run-locally"></a>
+## 💻 LLM Integrated Usage (run locally)
 
 ### 1) Create and activate a virtual env
 ```bash
@@ -87,6 +91,7 @@ Notes:
 python Main.py
 ```
 
+<a id="project-structure"></a>
 ## 🏗️ Project Structure
 
 ```
@@ -131,6 +136,7 @@ LLM-Powered-Summer-Home-Recommender/
     └── test_llm_functions.py   # Unit tests for LLM helper(s)
 ```
 
+<a id="key-components"></a>
 ## 🔧 Key Components
 
 ### Core Application
@@ -153,6 +159,7 @@ LLM-Powered-Summer-Home-Recommender/
 - **CSS (style.css)**: Modern, responsive styling
 - **Images**: Visual assets for the application
 
+<a id="development"></a>
 ## 🛠️ Development
 
 This project is designed to be easily extensible. You can:
@@ -168,6 +175,7 @@ This project is designed to be easily extensible. You can:
 
 ---
 
+<a id="api-overview"></a>
 ## API Overview
 Base URL: `http://127.0.0.1:5050`
 
@@ -220,6 +228,7 @@ Request/response details remain the same as listed below in your original bullet
 ---
 
 
+<a id="how-it-works"></a>
 ## How it works
 
 - Recommender (`backend/domain/recommender.py`):
@@ -233,20 +242,24 @@ Request/response details remain the same as listed below in your original bullet
 
 ---
 
+<a id="notes"></a>
 ## Notes
 - Data is stored in `data/*.json` for simplicity. For production, consider a database and proper auth.
 - CORS is enabled in the backend for local development.
 - The frontend points to `http://127.0.0.1:5050`; change `API_BASE` in `frontend/assets/app.js` if needed.
 
 
+<a id="attribution"></a>
 ## Attribution
 
 This project’s initial scaffolding was generated with AI assistance (ChatGPT‑5), and then extensively modified and finalized by the author.
 
+<a id="citation"></a>
 ### Citation
 OpenAI. (2025). ChatGPT (GPT‑5) [Large language model]. https://chat.openai.com/
 
 
+<a id="support"></a>
 ## 📞 Support
 
 If you have any questions or need help, please open an issue on GitHub.
