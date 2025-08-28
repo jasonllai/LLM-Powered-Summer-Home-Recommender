@@ -3,24 +3,26 @@
 A Python-based recommendation system for summer home rentals. It matches users with properties based on preferences, budget, and group size, enhanced with AI-powered suggestions.
 
 ## Table of Contents
-- [Features](#-features)
-- [Property Recommendation Logic](#-property-recommendation-logic)
-- [Installation](#-installation)
-- [Usage (run locally)](#-usage-run-locally)
-- [Project Structure](#-project-structure)
-- [Key Components](#-key-components)
-- [Development](#-development)
-- [API Overview](#-api-overview)
-- [How it works](#-how-it-works)
-- [Notes](#-notes)
-- [Support](#-support)
+- [Features](#features)
+- [Property Recommendation Logic](#property-recommendation-logic)
+- [Installation](#installation)
+- [Usage (run locally)](#usage-run-locally)
+- [Project Structure](#project-structure)
+- [Key Components](#key-components)
+- [Development](#development)
+- [API Overview](#api-overview)
+- [How it works](#how-it-works)
+- [Notes](#notes)
+- [Attribution](#attribution)
+- [Citation](#citation)
+- [Support](#support)
 
 ## 🏠 Features
 **Admin Portal**
   - Property Management: add, edit, or delete property listings.
 
 **User Portal**
-  - **User Profile Management**: sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.
+  - **User Profile Management**: Create, View, Edit, Delete profile;  Sign in, set your preferences (budget, group size, preferred environment) and password, and update user profile anytime.
   - **Property Recommendations**: view your top 20 suggested properties, further filter by price, group size, location, tags, or dates, and book a property.
   - **AI Travel Guide**: get fun, AI-generated suggested activities, e.g., "Perfect mountain cabin trip for 4 friends under $200/night."
 
