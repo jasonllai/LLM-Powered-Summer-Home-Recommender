@@ -198,7 +198,8 @@ def get_response(prompt):
 def get_response_messages(messages, max_retries=10):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    payload = {"model": "google/gemini-2.0-flash-exp:free", "messages": messages, "temperature": 0.7}
+    payload = {"model": "google/gemini-2.5-flash-image-preview:free", "messages": messages, "temperature": 0.7}
+    # payload = {"model": "google/gemini-2.0-flash-exp:free", "messages": messages, "temperature": 0.7}
 
     for attempt in range(max_retries):
         r = requests.post(url, headers=headers, json=payload, timeout=60)
