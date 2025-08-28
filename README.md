@@ -237,6 +237,12 @@ Request/response details remain the same as listed below in your original bullet
 - The frontend points to `http://127.0.0.1:5050`; change `API_BASE` in `frontend/assets/app.js` if needed.
 
 
+## Attribution
+
+This project’s initial scaffolding was generated with AI assistance (ChatGPT‑5), and then extensively modified and finalized by the author.
+
+### Citation
+OpenAI. (2025). ChatGPT (GPT‑5) [Large language model]. https://chat.openai.com/
 
 
 ## 📞 Support
